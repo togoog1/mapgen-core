@@ -8,36 +8,39 @@ public class AdvancedOrganicGenerator : IMapGenerator
     
     public Dictionary<string, object> DefaultParameters => new()
     {
-        { "resolution", 1024 },
-        { "cavityDensity", 0.2 },
-        { "cavitySizeRange", new double[] { 0.05, 0.25 } },
-        { "cavityDepth", 0.7 },
-        { "wallThickness", 0.3 },
-        { "organicVariation", 0.6 },
-        { "branchingFactor", 0.7 },
-        { "textureDetail", 0.5 },
-        { "smoothingPasses", 4 },
-        { "fractalOctaves", 6 },
-        { "noiseScale", 0.02 },
-        { "voronoiPoints", 100 },
-        { "depthContrast", 0.9 }
+        { "cavityDensity", 0.5 },
+        { "cavityDepth", 0.9 },
+        { "wallThickness", 0.2 },
+        { "organicVariation", 0.8 },
+        { "branchingFactor", 0.9 },
+        { "textureDetail", 0.7 },
+        { "smoothingPasses", 3 },
+        { "fractalOctaves", 5 },
+        { "noiseScale", 0.015 },
+        { "voronoiPoints", 150 },
+        { "depthContrast", 0.95 },
+        { "cavityConnectivity", 0.8 },
+        { "wallComplexity", 0.6 },
+        { "depthVariation", 0.7 }
     };
 
     public byte[] GenerateMap(int width, int height, int seed, Dictionary<string, object> parameters)
     {
-        var resolution = parameters.GetParameter("resolution", 1024);
-        var cavityDensity = parameters.GetParameter("cavityDensity", 0.4);
+        var cavityDensity = parameters.GetParameter("cavityDensity", 0.5);
         var cavitySizeRange = parameters.GetParameter("cavitySizeRange", new double[] { 0.05, 0.25 });
-        var cavityDepth = parameters.GetParameter("cavityDepth", 0.8);
-        var wallThickness = parameters.GetParameter("wallThickness", 0.3);
-        var organicVariation = parameters.GetParameter("organicVariation", 0.6);
-        var branchingFactor = parameters.GetParameter("branchingFactor", 0.7);
-        var textureDetail = parameters.GetParameter("textureDetail", 0.5);
-        var smoothingPasses = parameters.GetParameter("smoothingPasses", 4);
-        var fractalOctaves = parameters.GetParameter("fractalOctaves", 6);
-        var noiseScale = parameters.GetParameter("noiseScale", 0.02);
-        var voronoiPoints = parameters.GetParameter("voronoiPoints", 100);
-        var depthContrast = parameters.GetParameter("depthContrast", 0.9);
+        var cavityDepth = parameters.GetParameter("cavityDepth", 0.9);
+        var wallThickness = parameters.GetParameter("wallThickness", 0.2);
+        var organicVariation = parameters.GetParameter("organicVariation", 0.8);
+        var branchingFactor = parameters.GetParameter("branchingFactor", 0.9);
+        var textureDetail = parameters.GetParameter("textureDetail", 0.7);
+        var smoothingPasses = parameters.GetParameter("smoothingPasses", 3);
+        var fractalOctaves = parameters.GetParameter("fractalOctaves", 5);
+        var noiseScale = parameters.GetParameter("noiseScale", 0.015);
+        var voronoiPoints = parameters.GetParameter("voronoiPoints", 150);
+        var depthContrast = parameters.GetParameter("depthContrast", 0.95);
+        var cavityConnectivity = parameters.GetParameter("cavityConnectivity", 0.8);
+        var wallComplexity = parameters.GetParameter("wallComplexity", 0.6);
+        var depthVariation = parameters.GetParameter("depthVariation", 0.7);
 
         var random = new Random(seed);
         
@@ -108,25 +111,30 @@ public class AdvancedOrganicGenerator : IMapGenerator
         
         // Initialize with random cavity seeds
         var cavityCount = (int)(width * height * density / 100);
-        var cavities = new List<(int x, int y, double size)>();
+        var cavities = new List<(int x, int y, double size, double connectivity)>();
         
         for (int i = 0; i < cavityCount; i++)
         {
             var x = random.Next(0, width);
             var y = random.Next(0, height);
             var size = random.NextDouble() * (sizeRange[1] - sizeRange[0]) + sizeRange[0];
-            cavities.Add((x, y, size));
+            var connectivity = random.NextDouble() * 0.8 + 0.2; // 0.2 to 1.0
+            cavities.Add((x, y, size, connectivity));
         }
 
-        // Create cavity influence map
+        // Create interconnected cavity influence map
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
             {
+                var totalInfluence = 0.0;
                 var maxInfluence = 0.0;
+                var connectivityBonus = 0.0;
                 
-                foreach (var cavity in cavities)
+                // Calculate influence from each cavity
+                for (int i = 0; i < cavities.Count; i++)
                 {
+                    var cavity = cavities[i];
                     var distance = Math.Sqrt((x - cavity.x) * (x - cavity.x) + (y - cavity.y) * (y - cavity.y));
                     var normalizedDistance = distance / (Math.Min(width, height) * cavity.size);
                     
@@ -134,11 +142,27 @@ public class AdvancedOrganicGenerator : IMapGenerator
                     {
                         var influence = Math.Pow(1.0 - normalizedDistance, 2);
                         maxInfluence = Math.Max(maxInfluence, influence);
+                        totalInfluence += influence * cavity.connectivity;
+                        
+                        // Add connectivity bonus for nearby cavities
+                        for (int j = i + 1; j < cavities.Count; j++)
+                        {
+                            var otherCavity = cavities[j];
+                            var cavityDistance = Math.Sqrt((cavity.x - otherCavity.x) * (cavity.x - otherCavity.x) + 
+                                                         (cavity.y - otherCavity.y) * (cavity.y - otherCavity.y));
+                            var normalizedCavityDistance = cavityDistance / (Math.Min(width, height) * 0.1);
+                            
+                            if (normalizedCavityDistance < 2.0)
+                            {
+                                connectivityBonus += Math.Pow(1.0 - normalizedCavityDistance, 3) * 0.3;
+                            }
+                        }
                     }
                 }
                 
-                // Scale down the influence to create more balanced distribution
-                layer[x, y] = maxInfluence * 0.6; // Moderate intensity for balanced distribution
+                // Combine influences with connectivity bonus
+                var combinedInfluence = Math.Min(1.0, maxInfluence + totalInfluence * 0.3 + connectivityBonus);
+                layer[x, y] = combinedInfluence * 0.7; // Enhanced intensity for better cavity formation
             }
         }
 
