@@ -136,21 +136,14 @@ export function MapTest() {
       {/* Main Content */}
       <div className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <Activity className="h-4 w-4" />
               Dashboard
             </TabsTrigger>
             <TabsTrigger value="generator" className="flex items-center gap-2">
               <Map className="h-4 w-4" />
-              Generator
-            </TabsTrigger>
-            <TabsTrigger
-              value="visualization"
-              className="flex items-center gap-2"
-            >
-              <Eye className="h-4 w-4" />
-              Visualization
+              Map Generator
             </TabsTrigger>
           </TabsList>
 
@@ -311,145 +304,140 @@ export function MapTest() {
             </div>
           </TabsContent>
 
-          {/* Generator Tab */}
+          {/* Map Generator Tab */}
           <TabsContent value="generator" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
-                  Map Generator
-                </CardTitle>
-                <CardDescription>
-                  Configure and generate maps with custom parameters
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div className="space-y-4">
-                    <h3 className="font-semibold">Generation Options</h3>
-                    <div className="space-y-3">
-                      <Button
-                        onClick={testMapGeneration}
-                        disabled={loading}
-                        className="w-full"
-                        size="lg"
-                      >
-                        {loading ? (
-                          <>
-                            <Activity className="mr-2 h-5 w-5 animate-spin" />
-                            Generating...
-                          </>
-                        ) : (
-                          <>
-                            <Map className="mr-2 h-5 w-5" />
-                            Generate Random Map
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        onClick={testMapGenerationWithSeed}
-                        disabled={loading}
-                        variant="secondary"
-                        className="w-full"
-                        size="lg"
-                      >
-                        {loading ? (
-                          <>
-                            <Activity className="mr-2 h-5 w-5 animate-spin" />
-                            Generating...
-                          </>
-                        ) : (
-                          <>
-                            <Zap className="mr-2 h-5 w-5" />
-                            Generate with Seed (12345)
-                          </>
-                        )}
-                      </Button>
-                    </div>
+            <div className="grid gap-6 lg:grid-cols-2">
+              {/* Generation Controls */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-5 w-5" />
+                    Generation Controls
+                  </CardTitle>
+                  <CardDescription>
+                    Configure and generate maps with custom parameters
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <Button
+                      onClick={testMapGeneration}
+                      disabled={loading}
+                      className="w-full"
+                      size="lg"
+                    >
+                      {loading ? (
+                        <>
+                          <Activity className="mr-2 h-5 w-5 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Map className="mr-2 h-5 w-5" />
+                          Generate Random Map
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      onClick={testMapGenerationWithSeed}
+                      disabled={loading}
+                      variant="secondary"
+                      className="w-full"
+                      size="lg"
+                    >
+                      {loading ? (
+                        <>
+                          <Activity className="mr-2 h-5 w-5 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="mr-2 h-5 w-5" />
+                          Generate with Seed (12345)
+                        </>
+                      )}
+                    </Button>
                   </div>
 
-                  <div className="space-y-4">
-                    <h3 className="font-semibold">Results</h3>
-                    {mapResult ? (
-                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                        <div className="flex items-center gap-2 mb-3">
-                          <CheckCircle className="h-4 w-4 text-blue-600" />
-                          <span className="font-medium text-blue-800">
-                            Map Generated Successfully!
+                  {mapResult && (
+                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center gap-2 mb-3">
+                        <CheckCircle className="h-4 w-4 text-blue-600" />
+                        <span className="font-medium text-blue-800">
+                          Map Generated Successfully!
+                        </span>
+                      </div>
+                      <div className="space-y-2 text-sm text-blue-700">
+                        <div className="flex justify-between">
+                          <span>Seed:</span>
+                          <Badge variant="outline">{mapResult.seed}</Badge>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Format:</span>
+                          <Badge variant="secondary">{mapResult.format}</Badge>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Generated:</span>
+                          <span>
+                            {new Date(mapResult.generatedAt).toLocaleString()}
                           </span>
                         </div>
-                        <div className="space-y-2 text-sm text-blue-700">
-                          <div className="flex justify-between">
-                            <span>Seed:</span>
-                            <Badge variant="outline">{mapResult.seed}</Badge>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Format:</span>
-                            <Badge variant="secondary">
-                              {mapResult.format}
-                            </Badge>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Generated:</span>
-                            <span>
-                              {new Date(mapResult.generatedAt).toLocaleString()}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Data Size:</span>
-                            <Badge variant="outline">
-                              {mapResult.data.length} chars
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="flex gap-2 mt-4">
-                          <Button size="sm" variant="outline">
-                            <Download className="h-4 w-4 mr-2" />
-                            Download
-                          </Button>
-                          <Button size="sm" variant="outline">
-                            <Share2 className="h-4 w-4 mr-2" />
-                            Share
-                          </Button>
+                        <div className="flex justify-between">
+                          <span>Data Size:</span>
+                          <Badge variant="outline">
+                            {mapResult.data.length} chars
+                          </Badge>
                         </div>
                       </div>
-                    ) : (
-                      <div className="p-8 text-center text-muted-foreground border-2 border-dashed rounded-lg">
-                        <Map className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>Generate a map to see results here</p>
+                      <div className="flex gap-2 mt-4">
+                        <Button size="sm" variant="outline">
+                          <Download className="h-4 w-4 mr-2" />
+                          Download
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Share2 className="h-4 w-4 mr-2" />
+                          Share
+                        </Button>
                       </div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Visualization Tab */}
-          <TabsContent value="visualization" className="space-y-6">
-            {mapResult ? (
-              <MapVisualizer
-                mapData={mapResult.data}
-                width={mapResult.format === "png" ? 100 : 50}
-                height={mapResult.format === "png" ? 100 : 50}
-                seed={mapResult.seed}
-                format={mapResult.format}
-              />
-            ) : (
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Eye className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                    <h3 className="text-lg font-semibold mb-2">
-                      No Map to Visualize
-                    </h3>
-                    <p className="text-sm">
-                      Generate a map first to see the visualization
-                    </p>
-                  </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
-            )}
+
+              {/* Map Visualization */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Eye className="h-5 w-5" />
+                    Map Visualization
+                  </CardTitle>
+                  <CardDescription>
+                    Visual representation of the generated map
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {mapResult ? (
+                    <MapVisualizer
+                      mapData={mapResult.data}
+                      width={mapResult.format === "png" ? 100 : 50}
+                      height={mapResult.format === "png" ? 100 : 50}
+                      seed={mapResult.seed}
+                      format={mapResult.format}
+                    />
+                  ) : (
+                    <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
+                      <Eye className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                      <h3 className="text-lg font-semibold mb-2">
+                        No Map to Visualize
+                      </h3>
+                      <p className="text-sm">
+                        Generate a map first to see the visualization
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
 
