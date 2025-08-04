@@ -10,3 +10,4 @@
 /Users/nathanallen/Documents/GitHub/Playground/mapgen-core/MapGen.Core/obj/Debug/net9.0/refint/MapGen.Core.dll
 /Users/nathanallen/Documents/GitHub/Playground/mapgen-core/MapGen.Core/obj/Debug/net9.0/MapGen.Core.pdb
 /Users/nathanallen/Documents/GitHub/Playground/mapgen-core/MapGen.Core/obj/Debug/net9.0/ref/MapGen.Core.dll
+/Users/nathanallen/Documents/GitHub/Playground/mapgen-core/MapGen.Core/obj/Debug/net9.0/MapGen.Core.sourcelink.json
