@@ -580,11 +580,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/Users/nathanallen/Documents/GitHub/Playground/mapgen-service/MapGen.Service/MapGen.Service.csproj",
+      "projectUniqueName": "/Users/nathanallen/Documents/GitHub/Playground/mapgen-core/Service/MapGen.Service/MapGen.Service.csproj",
       "projectName": "MapGen.Service",
-      "projectPath": "/Users/nathanallen/Documents/GitHub/Playground/mapgen-service/MapGen.Service/MapGen.Service.csproj",
+      "projectPath": "/Users/nathanallen/Documents/GitHub/Playground/mapgen-core/Service/MapGen.Service/MapGen.Service.csproj",
       "packagesPath": "/Users/nathanallen/.nuget/packages/",
-      "outputPath": "/Users/nathanallen/Documents/GitHub/Playground/mapgen-service/MapGen.Service/obj/",
+      "outputPath": "/Users/nathanallen/Documents/GitHub/Playground/mapgen-core/Service/MapGen.Service/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "/Users/nathanallen/.nuget/NuGet/NuGet.Config"
