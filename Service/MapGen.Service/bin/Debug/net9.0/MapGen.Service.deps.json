@@ -8,6 +8,7 @@
     ".NETCoreApp,Version=v9.0": {
       "MapGen.Service/1.0.0": {
         "dependencies": {
+          "MapGen.Core": "1.0.0",
           "Scrutor": "6.1.0",
           "Swashbuckle.AspNetCore": "9.0.3"
         },
@@ -30,6 +31,17 @@
           "lib/netstandard2.0/Microsoft.OpenApi.dll": {
             "assemblyVersion": "1.6.23.0",
             "fileVersion": "1.6.23.0"
+          }
+        }
+      },
+      "Noise/0.0.0.1-alpha": {
+        "dependencies": {
+          "Tortoise": "0.1.1"
+        },
+        "runtime": {
+          "lib/net6.0/Noise.dll": {
+            "assemblyVersion": "0.0.0.1",
+            "fileVersion": "0.0.0.1"
           }
         }
       },
@@ -82,6 +94,27 @@
             "fileVersion": "9.0.3.1613"
           }
         }
+      },
+      "System.Numerics.Vectors/4.6.1": {},
+      "Tortoise/0.1.1": {
+        "runtime": {
+          "lib/net6.0/Tortoise.dll": {
+            "assemblyVersion": "0.1.1.0",
+            "fileVersion": "0.1.1.0"
+          }
+        }
+      },
+      "MapGen.Core/1.0.0": {
+        "dependencies": {
+          "Noise": "0.0.0.1-alpha",
+          "System.Numerics.Vectors": "4.6.1"
+        },
+        "runtime": {
+          "MapGen.Core.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
       }
     }
   },
@@ -119,6 +152,13 @@
       "path": "microsoft.openapi/1.6.23",
       "hashPath": "microsoft.openapi.1.6.23.nupkg.sha512"
     },
+    "Noise/0.0.0.1-alpha": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-LHLaqYW3lAaB9fLzJ4ybEMCN+CmhB+RfT8NGpS3GVz4V+DKSq4pKyfl4BNZWHfFXCsPKrF7tELe25vldYTUGJg==",
+      "path": "noise/0.0.0.1-alpha",
+      "hashPath": "noise.0.0.0.1-alpha.nupkg.sha512"
+    },
     "Scrutor/6.1.0": {
       "type": "package",
       "serviceable": true,
@@ -153,6 +193,25 @@
       "sha512": "sha512-DgJKJASz5OAygeKv2+N0FCZVhQylESqLXrtrRAqIT0vKpX7t5ImJ1FL6+6OqxKiamGkL0jchRXR8OgpMSsMh8w==",
       "path": "swashbuckle.aspnetcore.swaggerui/9.0.3",
       "hashPath": "swashbuckle.aspnetcore.swaggerui.9.0.3.nupkg.sha512"
+    },
+    "System.Numerics.Vectors/4.6.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-sQxefTnhagrhoq2ReR0D/6K0zJcr9Hrd6kikeXsA1I8kOCboTavcUC4r7TSfpKFeE163uMuxZcyfO1mGO3EN8Q==",
+      "path": "system.numerics.vectors/4.6.1",
+      "hashPath": "system.numerics.vectors.4.6.1.nupkg.sha512"
+    },
+    "Tortoise/0.1.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-oA7fzElY6NRdWep8ZjB9zJJo/9OlfEThRltKbMQUq0dco/BCCXAou+ltzTXkrB06yWxyzpMJNJ1aB1V6XyXQng==",
+      "path": "tortoise/0.1.1",
+      "hashPath": "tortoise.0.1.1.nupkg.sha512"
+    },
+    "MapGen.Core/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
     }
   }
 }

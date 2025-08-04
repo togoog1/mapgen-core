@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:5023/api";
+const API_BASE_URL = "http://localhost:5042/api";
 
 export interface MapGenerationRequest {
   width: number;
@@ -20,6 +20,15 @@ export interface HealthResponse {
   timestamp: string;
 }
 
+export interface AlgorithmInfo {
+  name: string;
+  defaultParameters: Record<string, unknown>;
+}
+
+export interface AlgorithmsResponse {
+  algorithms: AlgorithmInfo[];
+}
+
 export class ApiService {
   private baseUrl: string;
 
@@ -31,6 +40,14 @@ export class ApiService {
     const response = await fetch(`${this.baseUrl}/map/health`);
     if (!response.ok) {
       throw new Error(`Health check failed: ${response.statusText}`);
+    }
+    return response.json();
+  }
+
+  async getAlgorithms(): Promise<AlgorithmsResponse> {
+    const response = await fetch(`${this.baseUrl}/map/algorithms`);
+    if (!response.ok) {
+      throw new Error(`Failed to get algorithms: ${response.statusText}`);
     }
     return response.json();
   }

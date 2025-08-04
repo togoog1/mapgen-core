@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "rQkqJrgGx8k=",
+  "dgSpecHash": "8qkO+hmxdlc=",
   "success": true,
   "projectFilePath": "/Users/nathanallen/Documents/GitHub/Playground/mapgen-core/Service/MapGen.Service/MapGen.Service.csproj",
   "expectedPackageFiles": [
@@ -8,11 +8,14 @@
     "/Users/nathanallen/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/8.0.1/microsoft.extensions.dependencyinjection.abstractions.8.0.1.nupkg.sha512",
     "/Users/nathanallen/.nuget/packages/microsoft.extensions.dependencymodel/8.0.2/microsoft.extensions.dependencymodel.8.0.2.nupkg.sha512",
     "/Users/nathanallen/.nuget/packages/microsoft.openapi/1.6.23/microsoft.openapi.1.6.23.nupkg.sha512",
+    "/Users/nathanallen/.nuget/packages/noise/0.0.0.1-alpha/noise.0.0.0.1-alpha.nupkg.sha512",
     "/Users/nathanallen/.nuget/packages/scrutor/6.1.0/scrutor.6.1.0.nupkg.sha512",
     "/Users/nathanallen/.nuget/packages/swashbuckle.aspnetcore/9.0.3/swashbuckle.aspnetcore.9.0.3.nupkg.sha512",
     "/Users/nathanallen/.nuget/packages/swashbuckle.aspnetcore.swagger/9.0.3/swashbuckle.aspnetcore.swagger.9.0.3.nupkg.sha512",
     "/Users/nathanallen/.nuget/packages/swashbuckle.aspnetcore.swaggergen/9.0.3/swashbuckle.aspnetcore.swaggergen.9.0.3.nupkg.sha512",
-    "/Users/nathanallen/.nuget/packages/swashbuckle.aspnetcore.swaggerui/9.0.3/swashbuckle.aspnetcore.swaggerui.9.0.3.nupkg.sha512"
+    "/Users/nathanallen/.nuget/packages/swashbuckle.aspnetcore.swaggerui/9.0.3/swashbuckle.aspnetcore.swaggerui.9.0.3.nupkg.sha512",
+    "/Users/nathanallen/.nuget/packages/system.numerics.vectors/4.6.1/system.numerics.vectors.4.6.1.nupkg.sha512",
+    "/Users/nathanallen/.nuget/packages/tortoise/0.1.1/tortoise.0.1.1.nupkg.sha512"
   ],
   "logs": []
 }

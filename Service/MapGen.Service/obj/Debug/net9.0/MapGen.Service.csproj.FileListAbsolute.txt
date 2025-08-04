@@ -72,3 +72,7 @@
 /Users/nathanallen/Documents/GitHub/Playground/mapgen-core/Service/MapGen.Service/obj/Debug/net9.0/MapGen.Service.pdb
 /Users/nathanallen/Documents/GitHub/Playground/mapgen-core/Service/MapGen.Service/obj/Debug/net9.0/MapGen.Service.genruntimeconfig.cache
 /Users/nathanallen/Documents/GitHub/Playground/mapgen-core/Service/MapGen.Service/obj/Debug/net9.0/ref/MapGen.Service.dll
+/Users/nathanallen/Documents/GitHub/Playground/mapgen-core/Service/MapGen.Service/bin/Debug/net9.0/Noise.dll
+/Users/nathanallen/Documents/GitHub/Playground/mapgen-core/Service/MapGen.Service/bin/Debug/net9.0/Tortoise.dll
+/Users/nathanallen/Documents/GitHub/Playground/mapgen-core/Service/MapGen.Service/bin/Debug/net9.0/MapGen.Core.dll
+/Users/nathanallen/Documents/GitHub/Playground/mapgen-core/Service/MapGen.Service/bin/Debug/net9.0/MapGen.Core.pdb

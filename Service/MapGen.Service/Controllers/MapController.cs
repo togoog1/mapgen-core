@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MapGen.Service.Services;
+using MapGen.Core;
 
 namespace MapGen.Service.Controllers;
 
@@ -76,5 +77,31 @@ public class MapController : ControllerBase
     public IActionResult Health()
     {
         return Ok(new { status = "healthy", timestamp = DateTime.UtcNow });
+    }
+
+    [HttpGet("algorithms")]
+    public IActionResult GetAlgorithms()
+    {
+        try
+        {
+            var coreService = new Core.MapGenerationService();
+            var algorithms = coreService.GetAvailableAlgorithms().ToList();
+            
+            var algorithmDetails = algorithms.Select(algorithm => new
+            {
+                name = algorithm,
+                defaultParameters = coreService.GetDefaultParameters(algorithm)
+            });
+
+            return Ok(new
+            {
+                algorithms = algorithmDetails
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting algorithms");
+            return StatusCode(500, new { error = "Internal server error" });
+        }
     }
 } 

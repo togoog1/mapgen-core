@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { apiService } from "../services/api";
 import type {
   MapGenerationRequest,
   MapGenerationResponse,
   HealthResponse,
+  AlgorithmInfo,
 } from "../services/api";
 import { Button } from "./ui/button";
 import {
@@ -45,6 +46,29 @@ export function MapTest() {
   );
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [algorithms, setAlgorithms] = useState<AlgorithmInfo[]>([]);
+  const [selectedAlgorithm, setSelectedAlgorithm] = useState<string>("perlin");
+  const [algorithmParameters, setAlgorithmParameters] = useState<
+    Record<string, unknown>
+  >({});
+
+  // Load available algorithms on component mount
+  useEffect(() => {
+    const loadAlgorithms = async () => {
+      try {
+        const response = await apiService.getAlgorithms();
+        setAlgorithms(response.algorithms);
+        if (response.algorithms.length > 0) {
+          setSelectedAlgorithm(response.algorithms[0].name);
+          setAlgorithmParameters(response.algorithms[0].defaultParameters);
+        }
+      } catch (err) {
+        console.error("Failed to load algorithms:", err);
+      }
+    };
+
+    loadAlgorithms();
+  }, []);
 
   const testHealthCheck = async () => {
     setLoading(true);
@@ -66,11 +90,8 @@ export function MapTest() {
       const request: MapGenerationRequest = {
         width: 100,
         height: 100,
-        algorithm: "perlin",
-        parameters: {
-          scale: 0.1,
-          octaves: 4,
-        },
+        algorithm: selectedAlgorithm,
+        parameters: algorithmParameters,
       };
 
       const result = await apiService.generateMap(request);
@@ -89,11 +110,8 @@ export function MapTest() {
       const request: MapGenerationRequest = {
         width: 50,
         height: 50,
-        algorithm: "perlin",
-        parameters: {
-          scale: 0.2,
-          octaves: 2,
-        },
+        algorithm: selectedAlgorithm,
+        parameters: algorithmParameters,
       };
 
       const result = await apiService.generateMapWithSeed(request, 12345);
@@ -319,6 +337,33 @@ export function MapTest() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Algorithm Selection */}
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-sm font-medium">Algorithm</label>
+                      <select
+                        value={selectedAlgorithm}
+                        onChange={(e) => {
+                          const algorithm = algorithms.find(
+                            (a) => a.name === e.target.value
+                          );
+                          setSelectedAlgorithm(e.target.value);
+                          if (algorithm) {
+                            setAlgorithmParameters(algorithm.defaultParameters);
+                          }
+                        }}
+                        className="w-full mt-1 p-2 border border-gray-300 rounded-md bg-white"
+                      >
+                        {algorithms.map((algorithm) => (
+                          <option key={algorithm.name} value={algorithm.name}>
+                            {algorithm.name.charAt(0).toUpperCase() +
+                              algorithm.name.slice(1)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
                   <div className="space-y-3">
                     <Button
                       onClick={testMapGeneration}
