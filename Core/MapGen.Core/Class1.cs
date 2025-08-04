@@ -19,10 +19,12 @@ public class MapGenerationService
         {
             { "perlin", new PerlinNoiseGenerator() },
             { "simplex", new SimplexNoiseGenerator() },
-            { "cellular", new CellularAutomataGenerator() },
+            { "cellular", new OrganicCavityGenerator() },
             { "diamond-square", new DiamondSquareGenerator() },
             { "fractal", new FractalNoiseGenerator() },
-            { "voronoi", new VoronoiGenerator() }
+            { "voronoi", new VoronoiGenerator() },
+            { "organic-cavity", new OrganicCavityGenerator() },
+            { "advanced-organic", new AdvancedOrganicGenerator() }
         };
     }
 
@@ -189,55 +191,57 @@ public class SimplexNoiseGenerator : IMapGenerator
     }
 }
 
-// Cellular Automata Generator
-public class CellularAutomataGenerator : IMapGenerator
+// Enhanced Cellular Automata Generator for Organic Cavities
+public class OrganicCavityGenerator : IMapGenerator
 {
-    public string AlgorithmName => "cellular";
+    public string AlgorithmName => "organic-cavity";
     
     public Dictionary<string, object> DefaultParameters => new()
     {
-        { "iterations", 5 },
+        { "iterations", 8 },
         { "birthThreshold", 3 },
         { "survivalThreshold", 2 },
-        { "initialDensity", 0.4 }
+        { "initialDensity", 0.4 },
+        { "organicGrowth", 0.6 },
+        { "cavityDepth", 0.8 },
+        { "wallThickness", 0.2 },
+        { "textureDetail", 0.4 },
+        { "smoothingPasses", 3 }
     };
 
     public byte[] GenerateMap(int width, int height, int seed, Dictionary<string, object> parameters)
     {
-        var iterations = parameters.GetParameter("iterations", 5);
+        var iterations = parameters.GetParameter("iterations", 8);
         var birthThreshold = parameters.GetParameter("birthThreshold", 3);
         var survivalThreshold = parameters.GetParameter("survivalThreshold", 2);
         var initialDensity = parameters.GetParameter("initialDensity", 0.4);
+        var organicGrowth = parameters.GetParameter("organicGrowth", 0.6);
+        var cavityDepth = parameters.GetParameter("cavityDepth", 0.8);
+        var wallThickness = parameters.GetParameter("wallThickness", 0.2);
+        var textureDetail = parameters.GetParameter("textureDetail", 0.4);
+        var smoothingPasses = parameters.GetParameter("smoothingPasses", 3);
 
         var random = new Random(seed);
-        var grid = new bool[width, height];
+        
+        // Multi-layer approach for organic cavities
+        var baseLayer = GenerateBaseLayer(width, height, random, initialDensity);
+        var growthLayer = GenerateGrowthLayer(baseLayer, random, organicGrowth);
+        var detailLayer = GenerateDetailLayer(growthLayer, random, textureDetail);
+        var finalLayer = ApplySmoothing(detailLayer, smoothingPasses);
 
-        // Initialize with random cells
-        for (int x = 0; x < width; x++)
-        {
-            for (int y = 0; y < height; y++)
-            {
-                grid[x, y] = random.NextDouble() < initialDensity;
-            }
-        }
-
-        // Run cellular automata iterations
-        for (int i = 0; i < iterations; i++)
-        {
-            grid = RunCellularAutomataStep(grid, birthThreshold, survivalThreshold);
-        }
-
-        // Convert to pixel data
+        // Convert to pixel data with depth mapping
         var pixels = new byte[width * height * 4];
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
             {
-                var value = grid[x, y] ? (byte)255 : (byte)0;
+                var value = finalLayer[x, y];
+                var depth = CalculateDepth(value, cavityDepth, wallThickness);
+                
                 var index = (y * width + x) * 4;
-                pixels[index] = value;     // R
-                pixels[index + 1] = value; // G
-                pixels[index + 2] = value; // B
+                pixels[index] = depth;     // R (depth)
+                pixels[index + 1] = depth; // G (depth)
+                pixels[index + 2] = depth; // B (depth)
                 pixels[index + 3] = 255;   // A
             }
         }
@@ -245,7 +249,51 @@ public class CellularAutomataGenerator : IMapGenerator
         return pixels;
     }
 
-    private bool[,] RunCellularAutomataStep(bool[,] grid, int birthThreshold, int survivalThreshold)
+    private bool[,] GenerateBaseLayer(int width, int height, Random random, double density)
+    {
+        var grid = new bool[width, height];
+        
+        // Create organic initial pattern with clusters
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                // Create clustered seeding for more organic patterns
+                var clusterFactor = Math.Sin(x * 0.1) * Math.Cos(y * 0.1) * 0.2;
+                var adjustedDensity = density + clusterFactor;
+                
+                grid[x, y] = random.NextDouble() < adjustedDensity;
+            }
+        }
+
+        return grid;
+    }
+
+    private bool[,] GenerateGrowthLayer(bool[,] baseLayer, Random random, double organicGrowth)
+    {
+        var width = baseLayer.GetLength(0);
+        var height = baseLayer.GetLength(1);
+        var grid = new bool[width, height];
+
+        // Copy base layer
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                grid[x, y] = baseLayer[x, y];
+            }
+        }
+
+        // Apply organic growth patterns
+        for (int i = 0; i < 5; i++)
+        {
+            grid = RunOrganicGrowthStep(grid, random, organicGrowth);
+        }
+
+        return grid;
+    }
+
+    private bool[,] RunOrganicGrowthStep(bool[,] grid, Random random, double organicGrowth)
     {
         var width = grid.GetLength(0);
         var height = grid.GetLength(1);
@@ -255,16 +303,20 @@ public class CellularAutomataGenerator : IMapGenerator
         {
             for (int y = 0; y < height; y++)
             {
-                var neighbors = CountNeighbors(grid, x, y);
+                var neighbors = CountOrganicNeighbors(grid, x, y, random);
                 var isAlive = grid[x, y];
 
                 if (isAlive)
                 {
-                    newGrid[x, y] = neighbors >= survivalThreshold;
+                    // Survival with organic variation
+                    var survivalChance = organicGrowth + (random.NextDouble() - 0.5) * 0.2;
+                    newGrid[x, y] = neighbors >= 2 && random.NextDouble() < survivalChance;
                 }
                 else
                 {
-                    newGrid[x, y] = neighbors >= birthThreshold;
+                    // Birth with organic variation
+                    var birthChance = organicGrowth + (random.NextDouble() - 0.5) * 0.3;
+                    newGrid[x, y] = neighbors >= 3 && random.NextDouble() < birthChance;
                 }
             }
         }
@@ -272,15 +324,16 @@ public class CellularAutomataGenerator : IMapGenerator
         return newGrid;
     }
 
-    private int CountNeighbors(bool[,] grid, int x, int y)
+    private int CountOrganicNeighbors(bool[,] grid, int x, int y, Random random)
     {
         var width = grid.GetLength(0);
         var height = grid.GetLength(1);
         var count = 0;
 
-        for (int dx = -1; dx <= 1; dx++)
+        // Use organic neighbor patterns (not just 8-connected)
+        for (int dx = -2; dx <= 2; dx++)
         {
-            for (int dy = -1; dy <= 1; dy++)
+            for (int dy = -2; dy <= 2; dy++)
             {
                 if (dx == 0 && dy == 0) continue;
 
@@ -289,12 +342,141 @@ public class CellularAutomataGenerator : IMapGenerator
 
                 if (nx >= 0 && nx < width && ny >= 0 && ny < height)
                 {
-                    if (grid[nx, ny]) count++;
+                    if (grid[nx, ny])
+                    {
+                        // Weight by distance for more organic patterns
+                        var distance = Math.Sqrt(dx * dx + dy * dy);
+                        var weight = distance <= 1 ? 1.0 : 1.0 / distance;
+                        
+                        if (random.NextDouble() < weight)
+                        {
+                            count++;
+                        }
+                    }
                 }
             }
         }
 
         return count;
+    }
+
+    private double[,] GenerateDetailLayer(bool[,] growthLayer, Random random, double textureDetail)
+    {
+        var width = growthLayer.GetLength(0);
+        var height = growthLayer.GetLength(1);
+        var detailLayer = new double[width, height];
+
+        // Convert boolean grid to continuous values
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                detailLayer[x, y] = growthLayer[x, y] ? 1.0 : 0.0;
+            }
+        }
+
+        // Add granular texture detail
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                var noise = GenerateGranularNoise(x, y, random, textureDetail);
+                detailLayer[x, y] = Math.Max(0, Math.Min(1, detailLayer[x, y] + noise * 0.3));
+            }
+        }
+
+        return detailLayer;
+    }
+
+    private double GenerateGranularNoise(int x, int y, Random random, double detail)
+    {
+        // Create fine granular texture
+        var hash = (int)(x * 73856093 + y * 19349663);
+        random = new Random(hash);
+        
+        var noise = random.NextDouble() * 2 - 1;
+        var frequency = 1.0 + detail * 4.0;
+        
+        return Math.Sin(x * frequency * 0.1) * Math.Cos(y * frequency * 0.1) * detail;
+    }
+
+    private double[,] ApplySmoothing(double[,] layer, int passes)
+    {
+        var width = layer.GetLength(0);
+        var height = layer.GetLength(1);
+        var smoothed = new double[width, height];
+
+        // Copy original
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                smoothed[x, y] = layer[x, y];
+            }
+        }
+
+        // Apply multiple smoothing passes
+        for (int pass = 0; pass < passes; pass++)
+        {
+            var temp = new double[width, height];
+            
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    var sum = 0.0;
+                    var count = 0;
+
+                    // Gaussian-like smoothing
+                    for (int dx = -1; dx <= 1; dx++)
+                    {
+                        for (int dy = -1; dy <= 1; dy++)
+                        {
+                            var nx = x + dx;
+                            var ny = y + dy;
+
+                            if (nx >= 0 && nx < width && ny >= 0 && ny < height)
+                            {
+                                var weight = dx == 0 && dy == 0 ? 0.5 : 0.0625;
+                                sum += smoothed[nx, ny] * weight;
+                                count++;
+                            }
+                        }
+                    }
+
+                    temp[x, y] = sum;
+                }
+            }
+
+            // Copy back
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    smoothed[x, y] = temp[x, y];
+                }
+            }
+        }
+
+        return smoothed;
+    }
+
+    private byte CalculateDepth(double value, double cavityDepth, double wallThickness)
+    {
+        // Convert continuous value to depth map
+        if (value < wallThickness)
+        {
+            // Cavity area (dark)
+            var depth = (byte)(255 * (1.0 - cavityDepth));
+            return depth;
+        }
+        else
+        {
+            // Wall area (light)
+            var wallValue = (value - wallThickness) / (1.0 - wallThickness);
+            var depth = (byte)(255 * (0.3 + wallValue * 0.7));
+            return depth;
+        }
     }
 }
 
@@ -564,3 +746,4 @@ public static class ParameterExtensions
         return defaultValue;
     }
 }
+

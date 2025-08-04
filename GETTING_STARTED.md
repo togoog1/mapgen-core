@@ -1,165 +1,211 @@
-# Getting Started with MapGen
+# MapGen: High-Resolution Organic Cavity Generation
 
-A step-by-step guide to get you up and running with the MapGen playground in under 5 minutes.
+## 🎯 Goal
+
+Generate procedural world depth maps that show complex organic cavities and structures similar to natural porous materials, with high-resolution output and advanced pattern generation.
 
 ## 🚀 Quick Start
 
-### Option 1: One-Command Startup (Recommended)
+### 1. Run Test Iterations
 
 ```bash
-# Clone the repository
-git clone https://github.com/togoog1/mapgen-core.git
-cd mapgen-core
-
-# Start everything at once
-./start-all.sh
+./test-iterations.sh
 ```
 
-That's it! The script will:
+This script will:
 
-- ✅ Check prerequisites (.NET 9, Node.js 20)
-- ✅ Install dependencies (npm packages, restore .NET packages)
-- ✅ Open three terminal windows/tabs with each service running
-- ✅ Show you the URLs where everything is available
+- Build the Core project
+- Run comprehensive tests
+- Generate comparison images
+- Start the service for manual testing
+- Create a detailed report
 
-### Option 2: Manual Startup
+### 2. View Generated Images
 
-If the automatic script doesn't work on your system:
+Check the `test-output-YYYYMMDD-HHMMSS/` directory for:
+
+- Test images with different parameters
+- Performance benchmarks
+- Quality analysis reports
+
+### 3. Manual Testing via Web Interface
+
+1. Start the service: `cd Service && ./run.sh`
+2. Open the viewer: `cd Viewer && npm run dev`
+3. Navigate to the Map Generator tab
+4. Try the "Generate High-Res (1024x1024)" button
+
+## 🧬 Advanced Organic Generator
+
+The new `AdvancedOrganicGenerator` creates complex cavity patterns using:
+
+### Multi-Layer Approach
+
+1. **Base Cavities**: Initial cavity seeding with organic clustering
+2. **Organic Growth**: Biological-inspired expansion patterns
+3. **Fractal Noise**: Multi-octave detail enhancement
+4. **Voronoi Structure**: Natural cell-based boundaries
+5. **Surface Texture**: Granular detail addition
+6. **Smoothing**: Natural edge processing
+
+### Key Parameters
+
+```json
+{
+  "cavityDensity": 0.4, // Percentage of cavity area
+  "cavityDepth": 0.8, // How deep cavities appear
+  "wallThickness": 0.15, // Thickness of wall structures
+  "organicVariation": 0.6, // Natural variation in growth
+  "branchingFactor": 0.7, // How much cavities branch
+  "textureDetail": 0.5, // Surface granularity
+  "smoothingPasses": 4 // Edge smoothing iterations
+}
+```
+
+## 📊 Quality Metrics
+
+The test suite evaluates:
+
+### Visual Quality
+
+- **Cavity Percentage**: 25-65% for natural patterns
+- **Depth Variance**: >2000 for good contrast
+- **Average Depth**: Balanced distribution around middle gray
+- **Edge Quality**: Smooth, organic transitions
+
+### Technical Quality
+
+- **Resolution Support**: Up to 2048x2048
+- **Performance**: <30 seconds for 1024x1024
+- **Seed Consistency**: Identical results with same seed
+- **Parameter Sensitivity**: Responsive to adjustments
+
+## 🔧 Iterative Improvement
+
+### 1. Run Tests
 
 ```bash
-# Terminal 1 - Core library tests
-cd Core && dotnet watch test
-
-# Terminal 2 - API service
-cd Service/MapGen.Service && dotnet watch run --urls=http://localhost:5023
-
-# Terminal 3 - React frontend
-cd Viewer && npm run dev
+./test-iterations.sh
 ```
 
-## 📍 Where to Find Things
+### 2. Analyze Results
 
-Once everything is running:
+- Check generated images in test output directory
+- Review quality metrics in the report
+- Compare with reference image characteristics
 
-| Service        | URL                           | What you'll see           |
-| -------------- | ----------------------------- | ------------------------- |
-| **Viewer**     | http://localhost:5173         | Interactive playground UI |
-| **Service**    | http://localhost:5023         | API endpoints (JSON)      |
-| **API Docs**   | http://localhost:5023/swagger | Swagger documentation     |
-| **Core Tests** | Terminal output               | Test results as you code  |
+### 3. Adjust Parameters
 
-## 🎮 Your First Map
+Edit `Core/MapGen.Core/AdvancedOrganicGenerator.cs`:
 
-1. **Open the Viewer** at http://localhost:5173
-2. **Choose a generator** from the dropdown (e.g., "Perlin")
-3. **Adjust parameters** with the sliders
-4. **Watch the map** update in real-time
+- Modify default parameters
+- Adjust algorithm behavior
+- Fine-tune quality settings
 
-## 🛠 Development Workflow
-
-### Adding a New Generator
-
-1. **Write the generator** in `Core/MapGen.Core/Generators/`:
-
-   ```csharp
-   public class MyGenerator : IGenerator
-   {
-       public string Name => "MyCustom";
-       public MapData Generate(in GenParams p) => /* your logic */;
-   }
-   ```
-
-2. **Write tests** in `Core/MapGen.Core.Tests/`
-
-3. **Save the file** → Tests run automatically, Service restarts, Viewer updates
-
-4. **Test in the UI** → Your generator appears in the dropdown
-
-### Typical Development Loop
-
-```
-Edit C# → Tests run → Service rebuilds → Try in Viewer → Repeat
-     ↑                                                      ↓
-     └─────────────── All automatic, < 1 second ──────────┘
-```
-
-## 🔧 Troubleshooting
-
-### "Command not found" errors
-
-**Missing .NET 9:**
+### 4. Test Again
 
 ```bash
-# macOS
-brew install dotnet
-
-# Windows
-winget install Microsoft.DotNet.SDK.9
-
-# Linux
-# See: https://docs.microsoft.com/en-us/dotnet/core/install/linux
+./test-iterations.sh
 ```
 
-**Missing Node.js 20:**
+## 🎨 Reference Image Characteristics
 
-```bash
-# macOS
-brew install node@20
+The target pattern should exhibit:
 
-# Windows
-winget install OpenJS.NodeJS.LTS
+- **Organic Cavities**: Irregular, amoeba-like dark shapes
+- **Sinuous Walls**: Light, undulating structures
+- **Depth Gradients**: Smooth transitions from deep to shallow
+- **Granular Texture**: Fine surface detail
+- **Natural Complexity**: Non-geometric, biological appearance
 
-# Linux
-curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
-sudo apt-get install -y nodejs
+## 📈 Performance Targets
+
+| Resolution | Target Time | Memory Usage |
+| ---------- | ----------- | ------------ |
+| 512x512    | <5 seconds  | <50MB        |
+| 1024x1024  | <30 seconds | <200MB       |
+| 2048x2048  | <2 minutes  | <800MB       |
+
+## 🔬 Testing Framework
+
+### Automated Tests
+
+- **Parameter Sweep**: Test different parameter combinations
+- **Seed Consistency**: Verify deterministic generation
+- **Performance Benchmarking**: Measure generation speed
+- **Image Analysis**: Calculate quality metrics
+- **Resolution Scaling**: Test different sizes
+
+### Manual Testing
+
+- **Visual Comparison**: Side-by-side with reference
+- **Parameter Tuning**: Real-time adjustment
+- **Quality Assessment**: Subjective evaluation
+
+## 🛠️ Development Workflow
+
+1. **Implement Changes**: Modify algorithms in Core project
+2. **Run Tests**: Execute test suite for validation
+3. **Analyze Results**: Review generated images and metrics
+4. **Iterate**: Adjust parameters and algorithms
+5. **Validate**: Ensure improvements meet targets
+
+## 📁 Project Structure
+
+```
+mapgen-core/
+├── Core/                          # Core algorithms
+│   ├── MapGen.Core/
+│   │   ├── Class1.cs             # Basic generators
+│   │   └── AdvancedOrganicGenerator.cs  # New advanced generator
+│   └── MapGen.Core.Tests/
+│       ├── OrganicCavityTests.cs # Comprehensive tests
+│       └── ImageComparisonTests.cs # Quality analysis
+├── Service/                       # API service
+│   └── MapGen.Service/
+│       └── Controllers/
+│           └── MapController.cs   # High-res endpoints
+├── Viewer/                        # Web interface
+│   └── src/
+│       └── components/
+│           └── MapTest.tsx        # Enhanced UI
+└── test-iterations.sh            # Test automation script
 ```
 
-### Services won't start
+## 🎯 Success Criteria
 
-**Port conflicts:**
+### Visual Match
 
-- Kill any existing processes on ports 5023 or 5173
-- Or modify the URLs in the startup commands
+- [ ] Cavities match reference organic shapes
+- [ ] Wall structures are sinuous and natural
+- [ ] Gradients are smooth and realistic
+- [ ] Texture detail matches reference granularity
 
-**Permission denied:**
+### Technical Requirements
 
-```bash
-chmod +x start-all.sh
-```
+- [ ] Generate 2048x2048 resolution maps
+- [ ] Maintain <30 second generation time
+- [ ] Support real-time parameter adjustment
+- [ ] Export multiple format types
 
-**Packages not found:**
+### Quality Standards
 
-```bash
-# Restore .NET packages
-cd Core && dotnet restore
-cd ../Service && dotnet restore
+- [ ] No geometric artifacts
+- [ ] Natural edge transitions
+- [ ] Consistent depth mapping
+- [ ] Organic complexity patterns
 
-# Reinstall npm packages
-cd ../Viewer && rm -rf node_modules package-lock.json && npm install
-```
+## 🚀 Next Steps
 
-### Script opens wrong terminal
+1. **Run Initial Tests**: `./test-iterations.sh`
+2. **Review Generated Images**: Check test output directory
+3. **Compare with Reference**: Evaluate visual similarity
+4. **Adjust Parameters**: Fine-tune algorithm settings
+5. **Iterate**: Repeat until quality targets are met
 
-The script detects your platform and tries common terminals. If it doesn't work:
+The goal is to create procedural cavity maps that can be used for:
 
-```bash
-# See manual commands
-./start-all.sh --manual
-
-# Then copy-paste into your preferred terminal
-```
-
-## 📚 Next Steps
-
-- **Read the main [README.md](./readme.md)** for detailed architecture info
-- **Explore [Core/README.md](./Core/README.md)** for generator development
-- **Check [Viewer/README.md](./Viewer/README.md)** for UI customization
-- **Browse existing generators** in `Core/MapGen.Core/Generators/`
-
-## 🆘 Still Stuck?
-
-1. **Check prerequisites** with `./start-all.sh` (it validates everything)
-2. **Try manual mode** with `./start-all.sh --manual`
-3. **File an issue** with your platform details and error messages
-
-Happy map generation! 🗺️
+- **3D modeling and displacement**
+- **Game world generation**
+- **Scientific visualization**
+- **Artistic texture creation**

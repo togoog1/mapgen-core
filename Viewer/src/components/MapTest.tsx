@@ -88,8 +88,8 @@ export function MapTest() {
     setError(null);
     try {
       const request: MapGenerationRequest = {
-        width: 100,
-        height: 100,
+        width: 512,
+        height: 512,
         algorithm: selectedAlgorithm,
         parameters: algorithmParameters,
       };
@@ -108,13 +108,33 @@ export function MapTest() {
     setError(null);
     try {
       const request: MapGenerationRequest = {
-        width: 50,
-        height: 50,
+        width: 512,
+        height: 512,
         algorithm: selectedAlgorithm,
         parameters: algorithmParameters,
       };
 
       const result = await apiService.generateMapWithSeed(request, 12345);
+      setMapResult(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const testHighResolutionGeneration = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const request: MapGenerationRequest = {
+        width: 1024,
+        height: 1024,
+        algorithm: selectedAlgorithm,
+        parameters: algorithmParameters,
+      };
+
+      const result = await apiService.generateMap(request);
       setMapResult(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error occurred");
@@ -399,6 +419,25 @@ export function MapTest() {
                         <>
                           <Zap className="mr-2 h-5 w-5" />
                           Generate with Seed (12345)
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      onClick={testHighResolutionGeneration}
+                      disabled={loading}
+                      variant="outline"
+                      className="w-full"
+                      size="lg"
+                    >
+                      {loading ? (
+                        <>
+                          <Activity className="mr-2 h-5 w-5 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="mr-2 h-5 w-5" />
+                          Generate High-Res (1024x1024)
                         </>
                       )}
                     </Button>
