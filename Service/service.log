@@ -10,3 +10,5 @@ info: Microsoft.Hosting.Lifetime[0]
       Content root path: /Users/nathanallen/Documents/GitHub/Playground/mapgen-core/Service/MapGen.Service
 warn: Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware[3]
       Failed to determine the https port for redirect.
+info: MapGen.Service.Services.MapGenerationService[0]
+      Generating map with algorithm: perlin, size: 50x50, seed: 12345

@@ -5,6 +5,17 @@ import type {
   MapGenerationResponse,
   HealthResponse,
 } from "../services/api";
+import { Button } from "./ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "./ui/card";
+import { Badge } from "./ui/badge";
+import { Activity, Map, Zap, AlertCircle, CheckCircle } from "lucide-react";
+import { MapVisualizer } from "./MapVisualizer";
 
 export function MapTest() {
   const [healthStatus, setHealthStatus] = useState<HealthResponse | null>(null);
@@ -74,113 +85,177 @@ export function MapTest() {
   };
 
   return (
-    <div style={{ padding: "20px", maxWidth: "800px", margin: "0 auto" }}>
-      <h2>MapGen API Test</h2>
-
-      <div style={{ marginBottom: "20px" }}>
-        <h3>Health Check</h3>
-        <button
-          onClick={testHealthCheck}
-          disabled={loading}
-          style={{
-            padding: "10px 20px",
-            marginRight: "10px",
-            backgroundColor: "#007bff",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: loading ? "not-allowed" : "pointer",
-          }}
-        >
-          {loading ? "Testing..." : "Test Health Check"}
-        </button>
-
-        {healthStatus && (
-          <div
-            style={{
-              marginTop: "10px",
-              padding: "10px",
-              backgroundColor: "#d4edda",
-              border: "1px solid #c3e6cb",
-              borderRadius: "4px",
-            }}
-          >
-            <strong>Health Status:</strong> {healthStatus.status}
-            <br />
-            <strong>Timestamp:</strong> {healthStatus.timestamp}
-          </div>
-        )}
+    <div className="container mx-auto p-6 max-w-4xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-center mb-2">MapGen API Test</h1>
+        <p className="text-muted-foreground text-center">
+          Test the integration between Viewer, Service, and Core components
+        </p>
       </div>
 
-      <div style={{ marginBottom: "20px" }}>
-        <h3>Map Generation</h3>
-        <button
-          onClick={testMapGeneration}
-          disabled={loading}
-          style={{
-            padding: "10px 20px",
-            marginRight: "10px",
-            backgroundColor: "#28a745",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: loading ? "not-allowed" : "pointer",
-          }}
-        >
-          {loading ? "Generating..." : "Generate Map"}
-        </button>
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Health Check Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              Health Check
+            </CardTitle>
+            <CardDescription>
+              Verify the Service is running and accessible
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button
+              onClick={testHealthCheck}
+              disabled={loading}
+              className="w-full"
+              variant="outline"
+            >
+              {loading ? (
+                <>
+                  <Activity className="mr-2 h-4 w-4 animate-spin" />
+                  Testing...
+                </>
+              ) : (
+                <>
+                  <Zap className="mr-2 h-4 w-4" />
+                  Test Health Check
+                </>
+              )}
+            </Button>
 
-        <button
-          onClick={testMapGenerationWithSeed}
-          disabled={loading}
-          style={{
-            padding: "10px 20px",
-            backgroundColor: "#ffc107",
-            color: "black",
-            border: "none",
-            borderRadius: "4px",
-            cursor: loading ? "not-allowed" : "pointer",
-          }}
-        >
-          {loading ? "Generating..." : "Generate Map (Seed: 12345)"}
-        </button>
+            {healthStatus && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <span className="font-medium text-green-800">
+                    Service Healthy
+                  </span>
+                </div>
+                <div className="text-sm text-green-700">
+                  <div>
+                    <strong>Status:</strong> {healthStatus.status}
+                  </div>
+                  <div>
+                    <strong>Timestamp:</strong>{" "}
+                    {new Date(healthStatus.timestamp).toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-        {mapResult && (
-          <div
-            style={{
-              marginTop: "10px",
-              padding: "10px",
-              backgroundColor: "#d1ecf1",
-              border: "1px solid #bee5eb",
-              borderRadius: "4px",
-            }}
-          >
-            <strong>Map Generated Successfully!</strong>
-            <br />
-            <strong>Seed:</strong> {mapResult.seed}
-            <br />
-            <strong>Format:</strong> {mapResult.format}
-            <br />
-            <strong>Generated At:</strong> {mapResult.generatedAt}
-            <br />
-            <strong>Data Size:</strong> {mapResult.data.length} characters
-            (base64)
-          </div>
-        )}
+        {/* Map Generation Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Map className="h-5 w-5" />
+              Map Generation
+            </CardTitle>
+            <CardDescription>
+              Generate maps using the Core library via Service
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-2">
+              <Button
+                onClick={testMapGeneration}
+                disabled={loading}
+                className="flex-1"
+              >
+                {loading ? (
+                  <>
+                    <Activity className="mr-2 h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Map className="mr-2 h-4 w-4" />
+                    Generate Map
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={testMapGenerationWithSeed}
+                disabled={loading}
+                variant="secondary"
+                className="flex-1"
+              >
+                {loading ? (
+                  <>
+                    <Activity className="mr-2 h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Zap className="mr-2 h-4 w-4" />
+                    Seed: 12345
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {mapResult && (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <CheckCircle className="h-4 w-4 text-blue-600" />
+                  <span className="font-medium text-blue-800">
+                    Map Generated Successfully!
+                  </span>
+                </div>
+                <div className="space-y-2 text-sm text-blue-700">
+                  <div className="flex justify-between">
+                    <span>Seed:</span>
+                    <Badge variant="outline">{mapResult.seed}</Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Format:</span>
+                    <Badge variant="secondary">{mapResult.format}</Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Generated:</span>
+                    <span>
+                      {new Date(mapResult.generatedAt).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Data Size:</span>
+                    <Badge variant="outline">
+                      {mapResult.data.length} chars
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Map Visualization */}
+      {mapResult && (
+        <div className="mt-6">
+          <MapVisualizer
+            mapData={mapResult.data}
+            width={mapResult.format === "png" ? 100 : 50}
+            height={mapResult.format === "png" ? 100 : 50}
+            seed={mapResult.seed}
+            format={mapResult.format}
+          />
+        </div>
+      )}
 
       {error && (
-        <div
-          style={{
-            padding: "10px",
-            backgroundColor: "#f8d7da",
-            border: "1px solid #f5c6cb",
-            borderRadius: "4px",
-            color: "#721c24",
-          }}
-        >
-          <strong>Error:</strong> {error}
-        </div>
+        <Card className="mt-6 border-destructive">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-4 w-4" />
+              <span className="font-medium">Error</span>
+            </div>
+            <p className="mt-2 text-sm text-destructive">{error}</p>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

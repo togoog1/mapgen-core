@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:5042/api";
+const API_BASE_URL = "http://localhost:5023/api";
 
 export interface MapGenerationRequest {
   width: number;
