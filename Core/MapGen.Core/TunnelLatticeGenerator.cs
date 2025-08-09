@@ -6,18 +6,18 @@ namespace MapGen.Core;
 public class TunnelLatticeGenerator : IMapGenerator
 {
     public string AlgorithmName => "tunnel-lattice";
-    public string Version => "0.3.0";
+    public string Version => "0.4.0";
 
     public Dictionary<string, object> DefaultParameters => new()
     {
-        { "nodeCount", 24 },
+        { "nodeCount", 16 },
         { "baseRadius", 14.0 },
         { "radiusNoiseAmp", 0.18 },
-        { "extraLoops", 12 },
-        { "noiseOctaves", 4 },
+        { "extraLoops", 8 },
+        { "noiseOctaves", 2 },
         { "noiseScale", 1.2 },
         { "curviness", 1.0 },
-        { "curveSteps", 20 },
+        { "curveSteps", 12 },
         { "insideBase", (byte)45 },
         { "insideRange", (byte)35 },
         { "outsideBase", (byte)185 },
@@ -31,14 +31,14 @@ public class TunnelLatticeGenerator : IMapGenerator
             Width = width,
             Height = height,
             Seed = seed,
-            NodeCount = parameters.GetParameter("nodeCount", 24),
+            NodeCount = parameters.GetParameter("nodeCount", 16),
             BaseRadius = parameters.GetParameter("baseRadius", 14.0),
             RadiusNoiseAmp = parameters.GetParameter("radiusNoiseAmp", 0.18),
-            ExtraLoops = parameters.GetParameter("extraLoops", 12),
-            NoiseOctaves = parameters.GetParameter("noiseOctaves", 4),
+            ExtraLoops = parameters.GetParameter("extraLoops", 8),
+            NoiseOctaves = parameters.GetParameter("noiseOctaves", 2),
             NoiseScale = parameters.GetParameter("noiseScale", 1.2),
             Curviness = parameters.GetParameter("curviness", 1.0),
-            CurveSteps = parameters.GetParameter("curveSteps", 20),
+            CurveSteps = parameters.GetParameter("curveSteps", 12),
             InsideBase = parameters.GetParameter("insideBase", (byte)45),
             InsideRange = parameters.GetParameter("insideRange", (byte)35),
             OutsideBase = parameters.GetParameter("outsideBase", (byte)185),
@@ -74,14 +74,14 @@ public class TunnelLatticeGenerator : IMapGenerator
         public int Width { get; set; } = 512;
         public int Height { get; set; } = 512;
         public int Seed { get; set; } = 42;
-        public int NodeCount { get; set; } = 24;
+        public int NodeCount { get; set; } = 16;
         public double BaseRadius { get; set; } = 14.0;
         public double RadiusNoiseAmp { get; set; } = 0.18;
-        public int ExtraLoops { get; set; } = 12;
-        public int NoiseOctaves { get; set; } = 4;
+        public int ExtraLoops { get; set; } = 8;
+        public int NoiseOctaves { get; set; } = 2;
         public double NoiseScale { get; set; } = 1.2;
         public double Curviness { get; set; } = 1.0;
-        public int CurveSteps { get; set; } = 20;
+        public int CurveSteps { get; set; } = 12;
         public byte InsideBase { get; set; } = 45;
         public byte InsideRange { get; set; } = 35;
         public byte OutsideBase { get; set; } = 185;
@@ -259,28 +259,72 @@ public class TunnelLatticeGenerator : IMapGenerator
         double ABx = dvx, ABy = dvy;
         double AB2 = ABx * ABx + ABy * ABy + 1e-12;
 
-        for (int oy = -H; oy <= H; oy += H)
+        // Calculate bounding box to limit pixel checking
+        double minX = Math.Min(ax, ax + ABx) - baseR * (1.0 + amp);
+        double maxX = Math.Max(ax, ax + ABx) + baseR * (1.0 + amp);
+        double minY = Math.Min(ay, ay + ABy) - baseR * (1.0 + amp);
+        double maxY = Math.Max(ay, ay + ABy) + baseR * (1.0 + amp);
+
+        int startX = Math.Max(0, (int)Math.Floor(minX));
+        int endX = Math.Min(WW - 1, (int)Math.Ceiling(maxX));
+        int startY = Math.Max(0, (int)Math.Floor(minY));
+        int endY = Math.Min(HH - 1, (int)Math.Ceiling(maxY));
+
+        // Only process single copy first, add torus wrapping only if needed
+        for (int y = startY; y <= endY; y++)
         {
-            for (int ox = -W; ox <= W; ox += W)
+            for (int x = startX; x <= endX; x++)
             {
-                double startX = ax + ox, startY = ay + oy;
-                for (int y = 0; y < HH; y++)
+                double APx = x - ax;
+                double APy = y - ay;
+                double t = (APx * ABx + APy * ABy) / AB2;
+                if (t < 0) t = 0; else if (t > 1) t = 1;
+                double Cx = ax + ABx * t;
+                double Cy = ay + ABy * t;
+                double dx = x - Cx; double dy = y - Cy;
+                double dist = Math.Sqrt(dx * dx + dy * dy);
+                
+                // Simplified noise calculation 
+                double u = (Cx / W) % 1.0; if (u < 0) u += 1.0;
+                double v = (Cy / H) % 1.0; if (v < 0) v += 1.0;
+                double r = baseR * (1.0 + amp * NoiseToroidal(u, v, noiseOctaves, noiseScale));
+                float val = (float)(dist - r);
+                if (val < sdf[y, x]) sdf[y, x] = val;
+            }
+        }
+
+        // Handle torus wrapping only for segments near edges
+        if (minX < baseR || maxX > W - baseR || minY < baseR || maxY > H - baseR)
+        {
+            for (int oy = -H; oy <= H; oy += H)
+            {
+                for (int ox = -W; ox <= W; ox += W)
                 {
-                    for (int x = 0; x < WW; x++)
+                    if (ox == 0 && oy == 0) continue; // Already processed above
+                    
+                    double startX_wrap = ax + ox, startY_wrap = ay + oy;
+                    for (int y = 0; y < HH; y++)
                     {
-                        double APx = x - startX;
-                        double APy = y - startY;
-                        double t = (APx * ABx + APy * ABy) / AB2;
-                        if (t < 0) t = 0; else if (t > 1) t = 1;
-                        double Cx = startX + ABx * t;
-                        double Cy = startY + ABy * t;
-                        double dx = x - Cx; double dy = y - Cy;
-                        double dist = Math.Sqrt(dx * dx + dy * dy);
-                        double u = Mod(Cx, W) / W;
-                        double v = Mod(Cy, H) / H;
-                        double r = baseR * (1.0 + amp * NoiseToroidal(u, v, noiseOctaves, noiseScale));
-                        float val = (float)(dist - r);
-                        if (val < sdf[y, x]) sdf[y, x] = val;
+                        for (int x = 0; x < WW; x++)
+                        {
+                            double APx = x - startX_wrap;
+                            double APy = y - startY_wrap;
+                            double t = (APx * ABx + APy * ABy) / AB2;
+                            if (t < 0) t = 0; else if (t > 1) t = 1;
+                            double Cx = startX_wrap + ABx * t;
+                            double Cy = startY_wrap + ABy * t;
+                            double dx = x - Cx; double dy = y - Cy;
+                            double dist = Math.Sqrt(dx * dx + dy * dy);
+                            
+                            if (dist < baseR * 2) // Early exit for distant pixels
+                            {
+                                double u = Mod(Cx, W) / W;
+                                double v = Mod(Cy, H) / H;
+                                double r = baseR * (1.0 + amp * NoiseToroidal(u, v, noiseOctaves, noiseScale));
+                                float val = (float)(dist - r);
+                                if (val < sdf[y, x]) sdf[y, x] = val;
+                            }
+                        }
                     }
                 }
             }
