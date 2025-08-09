@@ -13,6 +13,8 @@ export interface MapGenerationResponse {
   format: string;
   generatedAt: string;
   data: string;
+  width: number;
+  height: number;
   algorithm?: string;
   algorithmVersion?: string;
 }

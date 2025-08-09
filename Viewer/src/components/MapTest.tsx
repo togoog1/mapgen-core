@@ -377,8 +377,8 @@ export function MapTest() {
               {mapResult ? (
                 <MapVisualizer
                   mapData={mapResult.data}
-                  width={mapResult.format === "png" ? 100 : 50}
-                  height={mapResult.format === "png" ? 100 : 50}
+                  width={mapResult.width}
+                  height={mapResult.height}
                   seed={mapResult.seed}
                   format={mapResult.format}
                 />
