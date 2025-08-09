@@ -214,7 +214,7 @@ cd ../Service && dotnet restore
 cd ../Viewer && rm -rf node_modules package-lock.json && npm install
 ```
 
-For more detailed troubleshooting, see [GETTING_STARTED.md](./GETTING_STARTED.md).
+For more detailed troubleshooting, check the component-specific READMEs in Core/, Service/, and Viewer/.
 
 ---
 
@@ -228,3 +228,13 @@ For more detailed troubleshooting, see [GETTING_STARTED.md](./GETTING_STARTED.md
 - WebGL preview in Viewer for 3‑D height‑maps.
 
 PRs welcome—file an issue first if you're planning a big change.
+
+## Housekeeping
+
+- Docs live under `docs/` and alongside code (e.g., `Core/MapGen.Core/docs`).
+- To archive analysis files and examples and optionally delete ephemeral outputs:
+
+```bash
+./scripts/cleanup.sh         # non-destructive archive
+./scripts/cleanup.sh --delete # also removes test-output-* and service.log
+```

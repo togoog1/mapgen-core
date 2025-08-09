@@ -98,14 +98,14 @@ print_success "Test summary saved to $TEST_OUTPUT_DIR/report.md"
 # Start the service for manual testing
 print_status "Starting MapGen service for manual testing..."
 cd Service
-if [ -f "run.sh" ]; then
-    chmod +x run.sh
-    ./run.sh &
+    if [ -f "../scripts/run.sh" ]; then
+      chmod +x ../scripts/run.sh
+      ../scripts/run.sh &
     SERVICE_PID=$!
     print_success "Service started with PID: $SERVICE_PID"
     echo "Service PID: $SERVICE_PID" > "../$TEST_OUTPUT_DIR/service-pid.txt"
-else
-    print_warning "No run.sh found in Service directory"
+    else
+      print_warning "No run.sh found in scripts directory"
 fi
 
 cd ..
