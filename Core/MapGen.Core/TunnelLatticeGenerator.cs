@@ -1,27 +1,29 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MapGen.Core;
 
 public class TunnelLatticeGenerator : IMapGenerator
 {
     public string AlgorithmName => "tunnel-lattice";
-    public string Version => "0.4.0";
+    public string Version => "0.6.0";
 
     public Dictionary<string, object> DefaultParameters => new()
     {
         { "nodeCount", 16 },
-        { "baseRadius", 14.0 },
-        { "radiusNoiseAmp", 0.18 },
+        { "baseRadius", 10.0 },
+        { "radiusNoiseAmp", 0.25 },
         { "extraLoops", 8 },
-        { "noiseOctaves", 2 },
-        { "noiseScale", 1.2 },
-        { "curviness", 1.0 },
-        { "curveSteps", 12 },
-        { "insideBase", (byte)45 },
-        { "insideRange", (byte)35 },
-        { "outsideBase", (byte)185 },
-        { "outsideRange", (byte)45 }
+        { "noiseOctaves", 3 },
+        { "noiseScale", 2.0 },
+        { "curviness", 0.8 },
+        { "curveSteps", 10 },
+        { "jitterAmount", 0.6 },
+        { "insideBase", (byte)40 },
+        { "insideRange", (byte)30 },
+        { "outsideBase", (byte)190 },
+        { "outsideRange", (byte)40 }
     };
 
     public byte[] GenerateMap(int width, int height, int seed, Dictionary<string, object> parameters)
@@ -31,15 +33,16 @@ public class TunnelLatticeGenerator : IMapGenerator
             Width = width,
             Height = height,
             Seed = seed,
-            NodeCount = parameters.GetParameter("nodeCount", 16),
-            BaseRadius = parameters.GetParameter("baseRadius", 14.0),
-            RadiusNoiseAmp = parameters.GetParameter("radiusNoiseAmp", 0.18),
-            ExtraLoops = parameters.GetParameter("extraLoops", 8),
+            NodeCount = parameters.GetParameter("nodeCount", 25),
+            BaseRadius = parameters.GetParameter("baseRadius", 12.0),
+            RadiusNoiseAmp = parameters.GetParameter("radiusNoiseAmp", 0.1),
+            ExtraLoops = parameters.GetParameter("extraLoops", 4),
             NoiseOctaves = parameters.GetParameter("noiseOctaves", 2),
-            NoiseScale = parameters.GetParameter("noiseScale", 1.2),
-            Curviness = parameters.GetParameter("curviness", 1.0),
-            CurveSteps = parameters.GetParameter("curveSteps", 12),
-            InsideBase = parameters.GetParameter("insideBase", (byte)45),
+            NoiseScale = parameters.GetParameter("noiseScale", 1.5),
+            Curviness = parameters.GetParameter("curviness", 0.8),
+            CurveSteps = parameters.GetParameter("curveSteps", 10),
+            JitterAmount = parameters.GetParameter("jitterAmount", 0.6),
+            InsideBase = parameters.GetParameter("insideBase", (byte)40),
             InsideRange = parameters.GetParameter("insideRange", (byte)35),
             OutsideBase = parameters.GetParameter("outsideBase", (byte)185),
             OutsideRange = parameters.GetParameter("outsideRange", (byte)45),
@@ -74,15 +77,16 @@ public class TunnelLatticeGenerator : IMapGenerator
         public int Width { get; set; } = 512;
         public int Height { get; set; } = 512;
         public int Seed { get; set; } = 42;
-        public int NodeCount { get; set; } = 16;
-        public double BaseRadius { get; set; } = 14.0;
-        public double RadiusNoiseAmp { get; set; } = 0.18;
-        public int ExtraLoops { get; set; } = 8;
+        public int NodeCount { get; set; } = 25;
+        public double BaseRadius { get; set; } = 12.0;
+        public double RadiusNoiseAmp { get; set; } = 0.1;
+        public int ExtraLoops { get; set; } = 4;
         public int NoiseOctaves { get; set; } = 2;
-        public double NoiseScale { get; set; } = 1.2;
-        public double Curviness { get; set; } = 1.0;
-        public int CurveSteps { get; set; } = 12;
-        public byte InsideBase { get; set; } = 45;
+        public double NoiseScale { get; set; } = 1.5;
+        public double Curviness { get; set; } = 0.8;
+        public int CurveSteps { get; set; } = 10;
+        public double JitterAmount { get; set; } = 0.6;
+        public byte InsideBase { get; set; } = 40;
         public byte InsideRange { get; set; } = 35;
         public byte OutsideBase { get; set; } = 185;
         public byte OutsideRange { get; set; } = 45;
@@ -95,10 +99,12 @@ public class TunnelLatticeGenerator : IMapGenerator
 
         var rng = new Random(opt.Seed);
 
-        var nodes = PoissonOnTorus(opt.NodeCount, W, H, rng);
+        // Create a structured grid lattice instead of random Poisson points
+        double jitterAmount = opt.JitterAmount;
+        var nodes = CreateGridLattice(opt.NodeCount, W, H, rng, jitterAmount);
         if (nodes.Length == 0) throw new InvalidOperationException("No nodes generated; lower NodeCount.");
 
-        var edges = BuildGraph(nodes, opt.ExtraLoops, W, H);
+        var edges = BuildLatticeGraph(nodes, opt.ExtraLoops, W, H);
 
         var sdf = new float[H, W];
         for (int y = 0; y < H; y++)
@@ -141,63 +147,136 @@ public class TunnelLatticeGenerator : IMapGenerator
 
     private struct Pt { public double x, y; public Pt(double x, double y) { this.x = x; this.y = y; } }
 
-    private static Pt[] PoissonOnTorus(int count, int W, int H, Random rng)
+    private static Pt[] CreateGridLattice(int count, int W, int H, Random rng, double jitterAmount = 0.6)
     {
-        if (count <= 0) return Array.Empty<Pt>();
-        var nodes = new Pt[count];
-        int n = 0, attempts = 0;
-        double minDist = (W + H) / (2.0 * Math.Max(4, count));
-        while (n < count && attempts < count * 800)
+        // Create a loosely structured lattice with organic deformation
+        int gridSize = (int)Math.Ceiling(Math.Sqrt(count));
+        double cellW = (double)W / gridSize;
+        double cellH = (double)H / gridSize;
+        
+        var nodes = new List<Pt>();
+        
+        for (int gy = 0; gy < gridSize; gy++)
         {
-            attempts++;
-            double x = rng.NextDouble() * W;
-            double y = rng.NextDouble() * H;
-            bool ok = true;
-            for (int i = 0; i < n; i++)
+            for (int gx = 0; gx < gridSize; gx++)
             {
-                if (TorusDistance(x, y, nodes[i].x, nodes[i].y, W, H) <= minDist) { ok = false; break; }
+                if (nodes.Count >= count) break;
+                
+                // Base grid position with offset pattern for more organic feel
+                double offsetX = (gy % 2) * cellW * 0.25; // Offset every other row
+                double baseX = (gx + 0.5) * cellW + offsetX;
+                double baseY = (gy + 0.5) * cellH;
+                
+                // Add organic deformation using multiple noise scales
+                double bigJitterX = (rng.NextDouble() - 0.5) * cellW * jitterAmount;
+                double bigJitterY = (rng.NextDouble() - 0.5) * cellH * jitterAmount;
+                
+                // Add some wave-like deformation across the grid
+                double waveX = Math.Sin(gy * 0.7) * cellW * 0.15;
+                double waveY = Math.Cos(gx * 0.8) * cellH * 0.15;
+                
+                double x = baseX + bigJitterX + waveX;
+                double y = baseY + bigJitterY + waveY;
+                
+                // Wrap to ensure torus boundary conditions
+                x = ((x % W) + W) % W;
+                y = ((y % H) + H) % H;
+                
+                nodes.Add(new Pt(x, y));
             }
-            if (ok) nodes[n++] = new Pt(x, y);
+            if (nodes.Count >= count) break;
         }
-        if (n < count) Array.Resize(ref nodes, n);
-        return nodes;
+        
+        return nodes.Take(count).ToArray();
     }
 
-    private static (int, int)[] BuildGraph(Pt[] nodes, int extraLoops, int W, int H)
+    private static (int, int)[] BuildLatticeGraph(Pt[] nodes, int extraLoops, int W, int H)
     {
         int N = nodes.Length;
         if (N == 0) return Array.Empty<(int, int)>();
-        var remaining = new bool[N]; for (int i = 0; i < N; i++) remaining[i] = true;
-        var edgesTemp = new System.Collections.Generic.List<(int, int)>();
-        int current = 0; remaining[current] = false;
-        int connectedCount = 1;
-        while (connectedCount < N)
+        
+        var edges = new List<(int, int)>();
+        int gridSize = (int)Math.Ceiling(Math.Sqrt(N));
+        
+        // Build structured grid connections (lattice pattern)
+        for (int i = 0; i < N; i++)
         {
-            double bestD = 1e18; int bestA = -1, bestB = -1;
-            for (int a = 0; a < N; a++) if (!remaining[a])
+            int gx = i % gridSize;
+            int gy = i / gridSize;
+            
+            // Connect to right neighbor
+            if (gx < gridSize - 1)
             {
-                for (int b = 0; b < N; b++) if (remaining[b])
+                int rightIdx = i + 1;
+                if (rightIdx < N) edges.Add((i, rightIdx));
+            }
+            
+            // Connect to bottom neighbor  
+            if (gy < gridSize - 1)
+            {
+                int bottomIdx = i + gridSize;
+                if (bottomIdx < N) edges.Add((i, bottomIdx));
+            }
+            
+            // Torus wrapping connections
+            // Right edge wraps to left
+            if (gx == gridSize - 1)
+            {
+                int wrapRightIdx = gy * gridSize; // leftmost node in same row
+                if (wrapRightIdx < N && wrapRightIdx != i) edges.Add((i, wrapRightIdx));
+            }
+            
+            // Bottom edge wraps to top
+            if (gy == gridSize - 1)
+            {
+                int wrapBottomIdx = gx; // topmost node in same column
+                if (wrapBottomIdx < N && wrapBottomIdx != i) edges.Add((i, wrapBottomIdx));
+            }
+        }
+        
+        // Add more organic connections for yarn-like intertwining
+        var connectionCandidates = new List<(int a, int b, double dist)>();
+        
+        for (int i = 0; i < N; i++)
+        {
+            for (int j = i + 1; j < N; j++)
+            {
+                double dist = TorusDistance(nodes[i].x, nodes[i].y, nodes[j].x, nodes[j].y, W, H);
+                if (dist < Math.Min(W, H) * 0.3) // Only consider nearby connections
                 {
-                    double d = TorusDistance(nodes[a].x, nodes[a].y, nodes[b].x, nodes[b].y, W, H);
-                    if (d < bestD) { bestD = d; bestA = a; bestB = b; }
+                    connectionCandidates.Add((i, j, dist));
                 }
             }
-            edgesTemp.Add((bestA, bestB));
-            remaining[bestB] = false; connectedCount++;
         }
-        var pairs = new System.Collections.Generic.List<(int a, int b, double d)>();
-        for (int i = 0; i < N; i++)
-            for (int j = i + 1; j < N; j++)
-                pairs.Add((i, j, TorusDistance(nodes[i].x, nodes[i].y, nodes[j].x, nodes[j].y, W, H)));
-        pairs.Sort((u, v) => u.d.CompareTo(v.d));
+        
+        // Sort by distance and add shortest connections that create interesting patterns
+        connectionCandidates.Sort((a, b) => a.dist.CompareTo(b.dist));
+        
         int added = 0;
-        foreach (var p in pairs)
+        foreach (var candidate in connectionCandidates)
         {
+            if (added >= extraLoops) break;
+            
+            // Check if this edge already exists
             bool exists = false;
-            foreach (var e in edgesTemp) if ((e.Item1 == p.a && e.Item2 == p.b) || (e.Item1 == p.b && e.Item2 == p.a)) { exists = true; break; }
-            if (!exists) { edgesTemp.Add((p.a, p.b)); if (++added >= extraLoops) break; }
+            foreach (var existing in edges)
+            {
+                if ((existing.Item1 == candidate.a && existing.Item2 == candidate.b) ||
+                    (existing.Item1 == candidate.b && existing.Item2 == candidate.a))
+                {
+                    exists = true;
+                    break;
+                }
+            }
+            
+            if (!exists)
+            {
+                edges.Add((candidate.a, candidate.b));
+                added++;
+            }
         }
-        return edgesTemp.ToArray();
+        
+        return edges.ToArray();
     }
 
     private static (double dx, double dy) TorusVector(double ax, double ay, double bx, double by, int W, int H)

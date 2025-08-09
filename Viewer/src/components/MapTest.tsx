@@ -235,6 +235,136 @@ export function MapTest() {
                     ) : null;
                   })()}
                 </div>
+
+                {/* Algorithm Parameters */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">Parameters</label>
+                  <div className="max-h-48 overflow-y-auto space-y-3 border rounded-lg p-3 bg-gray-50">
+                    {Object.entries(algorithmParameters).map(([key, value]) => (
+                      <div key={key} className="space-y-1">
+                        <label className="text-xs font-medium text-gray-700 capitalize">
+                          {key.replace(/([A-Z])/g, " $1").trim()}
+                        </label>
+                        {typeof value === "number" ? (
+                          <div className="space-y-1">
+                            <input
+                              type="number"
+                              value={value}
+                              step={value % 1 === 0 ? 1 : 0.1}
+                              onChange={(e) => {
+                                const newValue =
+                                  parseFloat(e.target.value) || 0;
+                                setAlgorithmParameters((prev) => ({
+                                  ...prev,
+                                  [key]: newValue,
+                                }));
+                              }}
+                              className="w-full p-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                            <div className="text-xs text-gray-500">
+                              Current: {value}
+                            </div>
+                          </div>
+                        ) : typeof value === "boolean" ? (
+                          <label className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              checked={value}
+                              onChange={(e) => {
+                                setAlgorithmParameters((prev) => ({
+                                  ...prev,
+                                  [key]: e.target.checked,
+                                }));
+                              }}
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="text-sm">
+                              {value ? "Enabled" : "Disabled"}
+                            </span>
+                          </label>
+                        ) : (
+                          <input
+                            type="text"
+                            value={String(value)}
+                            onChange={(e) => {
+                              setAlgorithmParameters((prev) => ({
+                                ...prev,
+                                [key]: e.target.value,
+                              }));
+                            }}
+                            className="w-full p-1.5 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button
+                      onClick={() => {
+                        const info = algorithms.find(
+                          (a) => a.name === selectedAlgorithm
+                        );
+                        if (info) {
+                          setAlgorithmParameters(info.defaultParameters);
+                        }
+                      }}
+                      variant="outline"
+                      size="sm"
+                    >
+                      Reset
+                    </Button>
+                    {selectedAlgorithm === "tunnel-lattice" && (
+                      <>
+                        <Button
+                          onClick={() => {
+                            setAlgorithmParameters({
+                              nodeCount: 9,
+                              baseRadius: 8.0,
+                              radiusNoiseAmp: 0.3,
+                              extraLoops: 6,
+                              noiseOctaves: 3,
+                              noiseScale: 2.5,
+                              curviness: 1.2,
+                              curveSteps: 8,
+                              jitterAmount: 0.8,
+                              insideBase: 35,
+                              insideRange: 25,
+                              outsideBase: 200,
+                              outsideRange: 35,
+                            });
+                          }}
+                          variant="secondary"
+                          size="sm"
+                        >
+                          Fine Yarn
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setAlgorithmParameters({
+                              nodeCount: 12,
+                              baseRadius: 15.0,
+                              radiusNoiseAmp: 0.2,
+                              extraLoops: 4,
+                              noiseOctaves: 2,
+                              noiseScale: 1.0,
+                              curviness: 0.6,
+                              curveSteps: 6,
+                              jitterAmount: 0.4,
+                              insideBase: 30,
+                              insideRange: 20,
+                              outsideBase: 180,
+                              outsideRange: 50,
+                            });
+                          }}
+                          variant="secondary"
+                          size="sm"
+                        >
+                          Thick Rope
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-3">
