@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MapGen.Service")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3c70a13b37075c4f736558c6a375decf460b4640")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c67fa50e7cef4bb84e3c0c6c3c6a5c97b6ec78c7")]
 [assembly: System.Reflection.AssemblyProductAttribute("MapGen.Service")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MapGen.Service")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

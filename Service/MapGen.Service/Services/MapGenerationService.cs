@@ -42,7 +42,9 @@ public class MapGenerationService : IMapGenerationService
                 Success = true,
                 MapData = mapData,
                 MapFormat = "raw", // Raw RGBA data
-                Seed = seed
+                Seed = seed,
+                Algorithm = request.Algorithm,
+                AlgorithmVersion = _coreService.GetAlgorithmVersion(request.Algorithm)
             };
         }
         catch (Exception ex)

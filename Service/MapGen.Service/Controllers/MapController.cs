@@ -109,6 +109,7 @@ public class MapController : ControllerBase
             var algorithmDetails = algorithms.Select(algorithm => new
             {
                 name = algorithm,
+                version = coreService.GetAlgorithmVersion(algorithm),
                 defaultParameters = coreService.GetDefaultParameters(algorithm)
             });
 

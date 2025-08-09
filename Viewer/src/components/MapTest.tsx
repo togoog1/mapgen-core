@@ -381,6 +381,16 @@ export function MapTest() {
                           </option>
                         ))}
                       </select>
+                      {(() => {
+                        const info = algorithms.find(
+                          (a) => a.name === selectedAlgorithm
+                        );
+                        return info?.version ? (
+                          <div className="text-xs text-gray-500 mt-1">
+                            Version: {info.version}
+                          </div>
+                        ) : null;
+                      })()}
                     </div>
                   </div>
 
@@ -460,6 +470,18 @@ export function MapTest() {
                           <span>Format:</span>
                           <Badge variant="secondary">{mapResult.format}</Badge>
                         </div>
+                        {(mapResult.algorithm ||
+                          mapResult.algorithmVersion) && (
+                          <div className="flex justify-between">
+                            <span>Generator:</span>
+                            <span>
+                              {mapResult.algorithm ?? selectedAlgorithm}
+                              {mapResult.algorithmVersion
+                                ? ` (v${mapResult.algorithmVersion})`
+                                : ""}
+                            </span>
+                          </div>
+                        )}
                         <div className="flex justify-between">
                           <span>Generated:</span>
                           <span>

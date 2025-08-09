@@ -21,5 +21,7 @@ public record MapGenerationResult
     public byte[]? MapData { get; init; }
     public string? MapFormat { get; init; }
     public int Seed { get; init; }
+    public string? Algorithm { get; init; }
+    public string? AlgorithmVersion { get; init; }
     public DateTime GeneratedAt { get; init; } = DateTime.UtcNow;
 } 

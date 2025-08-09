@@ -5,6 +5,7 @@ namespace MapGen.Core;
 public class AdvancedOrganicGenerator : IMapGenerator
 {
     public string AlgorithmName => "advanced-organic";
+    public string Version => "1.0.0";
     
     public Dictionary<string, object> DefaultParameters => new()
     {

@@ -7,6 +7,7 @@ public interface IMapGenerator
     byte[] GenerateMap(int width, int height, int seed, Dictionary<string, object> parameters);
     string AlgorithmName { get; }
     Dictionary<string, object> DefaultParameters { get; }
+    string Version { get; }
 }
 
 public class MapGenerationService
@@ -24,7 +25,8 @@ public class MapGenerationService
             { "fractal", new FractalNoiseGenerator() },
             { "voronoi", new VoronoiGenerator() },
             { "organic-cavity", new OrganicCavityGenerator() },
-            { "advanced-organic", new AdvancedOrganicGenerator() }
+            { "advanced-organic", new AdvancedOrganicGenerator() },
+            { "tunnel-lattice", new TunnelLatticeGenerator() }
         };
     }
 
@@ -38,19 +40,28 @@ public class MapGenerationService
         return generator.GenerateMap(width, height, seed, parameters);
     }
 
-    public IEnumerable<string> GetAvailableAlgorithms()
+        public IEnumerable<string> GetAvailableAlgorithms()
     {
         return _generators.Keys;
     }
-
+ 
     public Dictionary<string, object> GetDefaultParameters(string algorithm)
     {
         if (!_generators.TryGetValue(algorithm.ToLower(), out var generator))
         {
             throw new ArgumentException($"Unknown algorithm: {algorithm}");
         }
-
+ 
         return generator.DefaultParameters;
+    }
+ 
+    public string GetAlgorithmVersion(string algorithm)
+    {
+        if (!_generators.TryGetValue(algorithm.ToLower(), out var generator))
+        {
+            throw new ArgumentException($"Unknown algorithm: {algorithm}");
+        }
+        return generator.Version;
     }
 }
 
@@ -58,6 +69,7 @@ public class MapGenerationService
 public class PerlinNoiseGenerator : IMapGenerator
 {
     public string AlgorithmName => "perlin";
+    public string Version => "1.0.0";
     
     public Dictionary<string, object> DefaultParameters => new()
     {
@@ -127,6 +139,7 @@ public class PerlinNoiseGenerator : IMapGenerator
 public class SimplexNoiseGenerator : IMapGenerator
 {
     public string AlgorithmName => "simplex";
+    public string Version => "1.0.0";
     
     public Dictionary<string, object> DefaultParameters => new()
     {
@@ -195,6 +208,7 @@ public class SimplexNoiseGenerator : IMapGenerator
 public class OrganicCavityGenerator : IMapGenerator
 {
     public string AlgorithmName => "organic-cavity";
+    public string Version => "1.0.0";
     
     public Dictionary<string, object> DefaultParameters => new()
     {
@@ -484,6 +498,7 @@ public class OrganicCavityGenerator : IMapGenerator
 public class DiamondSquareGenerator : IMapGenerator
 {
     public string AlgorithmName => "diamond-square";
+    public string Version => "1.0.0";
     
     public Dictionary<string, object> DefaultParameters => new()
     {
@@ -600,6 +615,7 @@ public class DiamondSquareGenerator : IMapGenerator
 public class FractalNoiseGenerator : IMapGenerator
 {
     public string AlgorithmName => "fractal";
+    public string Version => "1.0.0";
     
     public Dictionary<string, object> DefaultParameters => new()
     {
@@ -667,6 +683,7 @@ public class FractalNoiseGenerator : IMapGenerator
 public class VoronoiGenerator : IMapGenerator
 {
     public string AlgorithmName => "voronoi";
+    public string Version => "1.0.0";
     
     public Dictionary<string, object> DefaultParameters => new()
     {

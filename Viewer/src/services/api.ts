@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:5042/api";
+const API_BASE_URL = "http://localhost:5023/api";
 
 export interface MapGenerationRequest {
   width: number;
@@ -13,6 +13,8 @@ export interface MapGenerationResponse {
   format: string;
   generatedAt: string;
   data: string;
+  algorithm?: string;
+  algorithmVersion?: string;
 }
 
 export interface HealthResponse {
@@ -22,6 +24,7 @@ export interface HealthResponse {
 
 export interface AlgorithmInfo {
   name: string;
+  version?: string;
   defaultParameters: Record<string, unknown>;
 }
 
