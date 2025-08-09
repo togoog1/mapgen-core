@@ -92,6 +92,7 @@ export function MapTest() {
         parameters: algorithmParameters,
       };
 
+      console.log("Generating map with request:", request);
       const result = await apiService.generateMap(request);
       setMapResult(result);
     } catch (err) {
@@ -212,6 +213,10 @@ export function MapTest() {
                       );
                       setSelectedAlgorithm(e.target.value);
                       if (algorithm) {
+                        console.log(
+                          "Setting algorithm parameters:",
+                          algorithm.defaultParameters
+                        );
                         setAlgorithmParameters(algorithm.defaultParameters);
                       }
                     }}
@@ -238,7 +243,12 @@ export function MapTest() {
 
                 {/* Algorithm Parameters */}
                 <div className="space-y-3">
-                  <label className="text-sm font-medium">Parameters</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">Parameters</label>
+                    <div className="text-xs text-gray-500">
+                      {Object.keys(algorithmParameters).length} params
+                    </div>
+                  </div>
                   <div className="max-h-48 overflow-y-auto space-y-3 border rounded-lg p-3 bg-gray-50">
                     {Object.entries(algorithmParameters).map(([key, value]) => (
                       <div key={key} className="space-y-1">

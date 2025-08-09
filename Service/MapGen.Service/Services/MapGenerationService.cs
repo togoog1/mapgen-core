@@ -26,6 +26,10 @@ public class MapGenerationService : IMapGenerationService
             _logger.LogInformation("Generating map with algorithm: {Algorithm}, size: {Width}x{Height}, seed: {Seed}", 
                 request.Algorithm, request.Width, request.Height, seed);
 
+            // Log the raw parameters for debugging
+            _logger.LogInformation("Raw parameters received: {Parameters}", 
+                string.Join(", ", request.Parameters.Select(kvp => $"{kvp.Key}={kvp.Value} ({kvp.Value?.GetType().Name})")));
+
             // Convert parameters to the format expected by the core service
             var parameters = request.Parameters.ToDictionary(
                 kvp => kvp.Key,

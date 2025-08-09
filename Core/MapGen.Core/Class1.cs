@@ -756,11 +756,40 @@ public static class ParameterExtensions
 {
     public static T GetParameter<T>(this Dictionary<string, object> parameters, string key, T defaultValue)
     {
-        if (parameters.TryGetValue(key, out var value) && value is T typedValue)
+        if (!parameters.TryGetValue(key, out var value) || value == null)
+        {
+            return defaultValue;
+        }
+
+        // Direct type match
+        if (value is T typedValue)
         {
             return typedValue;
         }
-        return defaultValue;
+
+        // Type conversion for common cases
+        try
+        {
+            return (T)Convert.ChangeType(value, typeof(T));
+        }
+        catch (InvalidCastException)
+        {
+            // Handle specific conversions that Convert.ChangeType might not handle
+            if (typeof(T) == typeof(byte) && value is int intValue)
+            {
+                return (T)(object)(byte)Math.Clamp(intValue, byte.MinValue, byte.MaxValue);
+            }
+            if (typeof(T) == typeof(byte) && value is double doubleValue)
+            {
+                return (T)(object)(byte)Math.Clamp((int)doubleValue, byte.MinValue, byte.MaxValue);
+            }
+            
+            return defaultValue;
+        }
+        catch (Exception)
+        {
+            return defaultValue;
+        }
     }
 }
 
