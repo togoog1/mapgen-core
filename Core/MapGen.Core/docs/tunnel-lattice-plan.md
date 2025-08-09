@@ -25,19 +25,19 @@ Test: FFT anisotropy ratio < 1.5.
 
 ---
 
-## Phase 2 — Make tunnels meander (curl‑noise polylines)
+## Phase 2 — Make tunnels meander (curl‑noise polylines) ✅
 
-- Convert each MST edge into a curvy polyline by advecting points through a tileable curl noise field.
-- Replace single segment SDF with capsule‑chain union along the polyline.
-- Tuning: `steps=12–24`, `stepLen≈baseRadius*0.8`, `curviness` multiplier.
+- ✅ Convert each MST edge into a curvy polyline by advecting points through a tileable curl noise field.
+- ✅ Replace single segment SDF with capsule‑chain union along the polyline.
+- ✅ Parameters: `curveSteps=16`, `curviness=1.0` multiplier.
+- Status: **Implemented** in v0.3.0
 
-Code stubs to add later:
+Key improvements:
 
-```csharp
-private static (double x, double y) CurlField(double u, double v) { /* ... */ }
-private static System.Collections.Generic.List<(double x,double y)> MakeCurvyPath(Pt a, Pt b, int steps, double stepLen, int W, int H) { /* ... */ }
-private static void UnionPolylineSdfTorus(float[,] sdf, System.Collections.Generic.List<(double x,double y)> pts, double baseR, double amp, int W, int H) { /* ... */ }
-```
+- Tunnels now curve and meander instead of being straight lines
+- Higher node count (20) and extra loops (10) for denser networks
+- Smaller radius (12.0) for more detailed tunnels
+- Better contrast with adjusted shading parameters
 
 ---
 

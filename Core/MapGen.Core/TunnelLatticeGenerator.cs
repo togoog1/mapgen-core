@@ -1,24 +1,27 @@
 using System;
+using System.Collections.Generic;
 
 namespace MapGen.Core;
 
 public class TunnelLatticeGenerator : IMapGenerator
 {
     public string AlgorithmName => "tunnel-lattice";
-    public string Version => "0.2.0";
+    public string Version => "0.3.0";
 
     public Dictionary<string, object> DefaultParameters => new()
     {
-        { "nodeCount", 12 },
-        { "baseRadius", 35.0 },
-        { "radiusNoiseAmp", 0.20 },
-        { "extraLoops", 6 },
-        { "noiseOctaves", 3 },
-        { "noiseScale", 1.0 },
-        { "insideBase", (byte)80 },
-        { "insideRange", (byte)50 },
-        { "outsideBase", (byte)150 },
-        { "outsideRange", (byte)50 }
+        { "nodeCount", 24 },
+        { "baseRadius", 14.0 },
+        { "radiusNoiseAmp", 0.18 },
+        { "extraLoops", 12 },
+        { "noiseOctaves", 4 },
+        { "noiseScale", 1.2 },
+        { "curviness", 1.0 },
+        { "curveSteps", 20 },
+        { "insideBase", (byte)45 },
+        { "insideRange", (byte)35 },
+        { "outsideBase", (byte)185 },
+        { "outsideRange", (byte)45 }
     };
 
     public byte[] GenerateMap(int width, int height, int seed, Dictionary<string, object> parameters)
@@ -28,16 +31,18 @@ public class TunnelLatticeGenerator : IMapGenerator
             Width = width,
             Height = height,
             Seed = seed,
-            NodeCount = parameters.GetParameter("nodeCount", 12),
-            BaseRadius = parameters.GetParameter("baseRadius", 35.0),
-            RadiusNoiseAmp = parameters.GetParameter("radiusNoiseAmp", 0.20),
-            ExtraLoops = parameters.GetParameter("extraLoops", 6),
-            NoiseOctaves = parameters.GetParameter("noiseOctaves", 3),
-            NoiseScale = parameters.GetParameter("noiseScale", 1.0),
-            InsideBase = parameters.GetParameter("insideBase", (byte)80),
-            InsideRange = parameters.GetParameter("insideRange", (byte)50),
-            OutsideBase = parameters.GetParameter("outsideBase", (byte)150),
-            OutsideRange = parameters.GetParameter("outsideRange", (byte)50),
+            NodeCount = parameters.GetParameter("nodeCount", 24),
+            BaseRadius = parameters.GetParameter("baseRadius", 14.0),
+            RadiusNoiseAmp = parameters.GetParameter("radiusNoiseAmp", 0.18),
+            ExtraLoops = parameters.GetParameter("extraLoops", 12),
+            NoiseOctaves = parameters.GetParameter("noiseOctaves", 4),
+            NoiseScale = parameters.GetParameter("noiseScale", 1.2),
+            Curviness = parameters.GetParameter("curviness", 1.0),
+            CurveSteps = parameters.GetParameter("curveSteps", 20),
+            InsideBase = parameters.GetParameter("insideBase", (byte)45),
+            InsideRange = parameters.GetParameter("insideRange", (byte)35),
+            OutsideBase = parameters.GetParameter("outsideBase", (byte)185),
+            OutsideRange = parameters.GetParameter("outsideRange", (byte)45),
         };
 
         var gray = GenerateTileGray(opt);
@@ -69,16 +74,18 @@ public class TunnelLatticeGenerator : IMapGenerator
         public int Width { get; set; } = 512;
         public int Height { get; set; } = 512;
         public int Seed { get; set; } = 42;
-        public int NodeCount { get; set; } = 12;
-        public double BaseRadius { get; set; } = 35.0;
-        public double RadiusNoiseAmp { get; set; } = 0.20;
-        public int ExtraLoops { get; set; } = 6;
-        public int NoiseOctaves { get; set; } = 3;
-        public double NoiseScale { get; set; } = 1.0;
-        public byte InsideBase { get; set; } = 80;
-        public byte InsideRange { get; set; } = 50;
-        public byte OutsideBase { get; set; } = 150;
-        public byte OutsideRange { get; set; } = 50;
+        public int NodeCount { get; set; } = 24;
+        public double BaseRadius { get; set; } = 14.0;
+        public double RadiusNoiseAmp { get; set; } = 0.18;
+        public int ExtraLoops { get; set; } = 12;
+        public int NoiseOctaves { get; set; } = 4;
+        public double NoiseScale { get; set; } = 1.2;
+        public double Curviness { get; set; } = 1.0;
+        public int CurveSteps { get; set; } = 20;
+        public byte InsideBase { get; set; } = 45;
+        public byte InsideRange { get; set; } = 35;
+        public byte OutsideBase { get; set; } = 185;
+        public byte OutsideRange { get; set; } = 45;
     }
 
     public static byte[,] GenerateTileGray(Options opt)
@@ -102,8 +109,10 @@ public class TunnelLatticeGenerator : IMapGenerator
         {
             var a = nodes[e.Item1];
             var b = nodes[e.Item2];
-            var dv = TorusVector(a.x, a.y, b.x, b.y, W, H);
-            SegmentSdfMinTorusByVector(sdf, a.x, a.y, dv.dx, dv.dy, opt.BaseRadius, opt.RadiusNoiseAmp, W, H, opt.NoiseOctaves, opt.NoiseScale);
+            
+            // Create curvy path instead of straight line
+            var curvyPath = MakeCurvyPath(a, b, opt.CurveSteps, opt.Curviness, W, H, rng);
+            UnionPolylineSdfTorus(sdf, curvyPath, opt.BaseRadius, opt.RadiusNoiseAmp, W, H, opt.NoiseOctaves, opt.NoiseScale);
         }
 
         var img = new byte[H, W];
@@ -281,5 +290,77 @@ public class TunnelLatticeGenerator : IMapGenerator
     private static double Mod(double a, int m)
     {
         double r = a % m; if (r < 0) r += m; return r;
+    }
+
+    // Phase 2: Curvy polylines implementation
+    private static (double x, double y) CurlField(double u, double v)
+    {
+        // Simple curl noise - derivative of potential field
+        double scale = 4.0;
+        double dx = ValueNoisePeriodic(u, v + 0.01, 256) - ValueNoisePeriodic(u, v - 0.01, 256);
+        double dy = ValueNoisePeriodic(u + 0.01, v, 256) - ValueNoisePeriodic(u - 0.01, v, 256);
+        return (dy * scale, -dx * scale); // Perpendicular for curl
+    }
+
+    private static System.Collections.Generic.List<(double x, double y)> MakeCurvyPath(
+        Pt a, Pt b, int steps, double curviness, int W, int H, Random rng)
+    {
+        var path = new System.Collections.Generic.List<(double x, double y)>();
+        path.Add((a.x, a.y));
+
+        if (steps <= 1)
+        {
+            path.Add((b.x, b.y));
+            return path;
+        }
+
+        // Get the direct vector from a to b accounting for torus wrapping
+        var directVec = TorusVector(a.x, a.y, b.x, b.y, W, H);
+        double totalDist = Math.Sqrt(directVec.dx * directVec.dx + directVec.dy * directVec.dy);
+        double stepLen = totalDist / steps;
+
+        double currentX = a.x, currentY = a.y;
+        
+        for (int i = 1; i < steps; i++)
+        {
+            // Progress toward target
+            double t = (double)i / steps;
+            double targetX = a.x + directVec.dx * t;
+            double targetY = a.y + directVec.dy * t;
+            
+            // Add curl noise deviation
+            double u = Mod(currentX, W) / W;
+            double v = Mod(currentY, H) / H;
+            var curl = CurlField(u, v);
+            
+            // Blend toward target with curl deviation
+            double deviation = curviness * stepLen * 0.5;
+            currentX = targetX + curl.x * deviation;
+            currentY = targetY + curl.y * deviation;
+            
+            // Wrap coordinates
+            currentX = Mod(currentX, W);
+            currentY = Mod(currentY, H);
+            
+            path.Add((currentX, currentY));
+        }
+
+        path.Add((b.x, b.y));
+        return path;
+    }
+
+    private static void UnionPolylineSdfTorus(float[,] sdf, System.Collections.Generic.List<(double x, double y)> path,
+        double baseR, double amp, int W, int H, int noiseOctaves, double noiseScale)
+    {
+        if (path.Count < 2) return;
+
+        // Draw capsules between consecutive points
+        for (int i = 0; i < path.Count - 1; i++)
+        {
+            var a = path[i];
+            var b = path[i + 1];
+            var dv = TorusVector(a.x, a.y, b.x, b.y, W, H);
+            SegmentSdfMinTorusByVector(sdf, a.x, a.y, dv.dx, dv.dy, baseR, amp, W, H, noiseOctaves, noiseScale);
+        }
     }
 } 

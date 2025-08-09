@@ -8,8 +8,8 @@ public interface IMapGenerationService
 
 public record MapGenerationRequest
 {
-    public int Width { get; init; } = 100;
-    public int Height { get; init; } = 100;
+    public int Width { get; init; } = 512;
+    public int Height { get; init; } = 512;
     public string Algorithm { get; init; } = "perlin";
     public Dictionary<string, object> Parameters { get; init; } = new();
 }

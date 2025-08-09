@@ -4,17 +4,20 @@ Produces a seamless, loopy tunnel pattern using a toroidal SDF built from a smal
 
 Status
 
-- Version: 0.2.0
+- Version: 0.3.0
 - Phase 1 implemented: isotropic tileable noise for radius modulation.
+- Phase 2 implemented: curvy polylines using curl noise for meandering tunnels.
 
 Parameters
 
-- nodeCount (int): default 12 — number of graph nodes
-- extraLoops (int): default 6 — extra edges after MST
-- baseRadius (double): default 35.0 — tunnel thickness baseline (px)
-- radiusNoiseAmp (double): default 0.20 — variation amplitude
-- noiseOctaves (int): default 3 — fBm octaves (tileable value noise)
-- noiseScale (double): default 1.0 — fBm base frequency
+- nodeCount (int): default 20 — number of graph nodes
+- extraLoops (int): default 10 — extra edges after MST
+- baseRadius (double): default 12.0 — tunnel thickness baseline (px)
+- radiusNoiseAmp (double): default 0.15 — variation amplitude
+- noiseOctaves (int): default 4 — fBm octaves (tileable value noise)
+- noiseScale (double): default 1.5 — fBm base frequency
+- curviness (double): default 1.0 — curl noise deviation strength
+- curveSteps (int): default 16 — polyline segments per edge
 - insideBase, insideRange, outsideBase, outsideRange (bytes): shading ramps
 
 Artifacts & Tuning
@@ -25,7 +28,7 @@ Artifacts & Tuning
 
 Roadmap
 
-- Phase 2: Curvy polylines via curl noise; capsule chain SDF.
+- ✅ Phase 2: Curvy polylines via curl noise; capsule chain SDF.
 - Phase 3: Chambers (rooms) + k‑nearest branching with length clamp.
 - Phase 4: SDF normal shading (rim), micro‑grain, AO.
 
