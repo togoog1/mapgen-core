@@ -7,19 +7,19 @@ namespace MapGen.Core;
 public class TunnelLatticeGenerator : IMapGenerator
 {
     public string AlgorithmName => "tunnel-lattice";
-    public string Version => "0.6.0";
+    public string Version => "0.8.0";
 
     public Dictionary<string, object> DefaultParameters => new()
     {
-        { "nodeCount", 16 },
-        { "baseRadius", 10.0 },
-        { "radiusNoiseAmp", 0.25 },
-        { "extraLoops", 8 },
-        { "noiseOctaves", 3 },
-        { "noiseScale", 2.0 },
-        { "curviness", 0.8 },
-        { "curveSteps", 10 },
-        { "jitterAmount", 0.6 },
+        { "nodeCount", 16 },           // Grid density (4x4 = 16 nodes)
+        { "baseRadius", 12.0 },        // Base tunnel width
+        { "radiusNoiseAmp", 0.2 },     // Width variation
+        { "extraLoops", 6 },           // Additional random connections
+        { "curviness", 0.6 },          // How curved the tunnels are
+        { "curveSteps", 8 },           // Smoothness of curves
+        { "jitterAmount", 0.4 },       // Node position randomness
+        { "noiseOctaves", 3 },         // Noise detail
+        { "noiseScale", 1.5 },         // Noise frequency
         { "insideBase", (byte)40 },
         { "insideRange", (byte)30 },
         { "outsideBase", (byte)190 },
@@ -33,457 +33,340 @@ public class TunnelLatticeGenerator : IMapGenerator
             Width = width,
             Height = height,
             Seed = seed,
-            NodeCount = parameters.GetParameter("nodeCount", 25),
+            NodeCount = parameters.GetParameter("nodeCount", 16),
             BaseRadius = parameters.GetParameter("baseRadius", 12.0),
-            RadiusNoiseAmp = parameters.GetParameter("radiusNoiseAmp", 0.1),
-            ExtraLoops = parameters.GetParameter("extraLoops", 4),
-            NoiseOctaves = parameters.GetParameter("noiseOctaves", 2),
+            RadiusNoiseAmp = parameters.GetParameter("radiusNoiseAmp", 0.2),
+            ExtraLoops = parameters.GetParameter("extraLoops", 6),
+            Curviness = parameters.GetParameter("curviness", 0.6),
+            CurveSteps = parameters.GetParameter("curveSteps", 8),
+            JitterAmount = parameters.GetParameter("jitterAmount", 0.4),
+            NoiseOctaves = parameters.GetParameter("noiseOctaves", 3),
             NoiseScale = parameters.GetParameter("noiseScale", 1.5),
-            Curviness = parameters.GetParameter("curviness", 0.8),
-            CurveSteps = parameters.GetParameter("curveSteps", 10),
-            JitterAmount = parameters.GetParameter("jitterAmount", 0.6),
             InsideBase = parameters.GetParameter("insideBase", (byte)40),
-            InsideRange = parameters.GetParameter("insideRange", (byte)35),
-            OutsideBase = parameters.GetParameter("outsideBase", (byte)185),
-            OutsideRange = parameters.GetParameter("outsideRange", (byte)45),
+            InsideRange = parameters.GetParameter("insideRange", (byte)30),
+            OutsideBase = parameters.GetParameter("outsideBase", (byte)190),
+            OutsideRange = parameters.GetParameter("outsideRange", (byte)40),
         };
 
-        var gray = GenerateTileGray(opt);
-        return ConvertGrayToRgba(gray);
+        var grayMap = GenerateTileGray(opt);
+        return ConvertGrayToRgba(grayMap);
     }
 
-    private static byte[] ConvertGrayToRgba(byte[,] gray)
+    private class Options
     {
-        int h = gray.GetLength(0), w = gray.GetLength(1);
-        var pixels = new byte[w * h * 4];
-        int i = 0;
-        for (int y = 0; y < h; y++)
-        {
-            for (int x = 0; x < w; x++)
-            {
-                byte v = gray[y, x];
-                pixels[i++] = v;
-                pixels[i++] = v;
-                pixels[i++] = v;
-                pixels[i++] = 255;
-            }
-        }
-        return pixels;
+        public int Width;
+        public int Height;
+        public int Seed;
+        public int NodeCount;
+        public double BaseRadius;
+        public double RadiusNoiseAmp;
+        public int ExtraLoops;
+        public double Curviness;
+        public int CurveSteps;
+        public double JitterAmount;
+        public int NoiseOctaves;
+        public double NoiseScale;
+        public byte InsideBase;
+        public byte InsideRange;
+        public byte OutsideBase;
+        public byte OutsideRange;
     }
 
-    // ==== Port of the standalone generator (adapted to class) ====
-    public sealed class Options
+    private byte[] GenerateTileGray(Options opt)
     {
-        public int Width { get; set; } = 512;
-        public int Height { get; set; } = 512;
-        public int Seed { get; set; } = 42;
-        public int NodeCount { get; set; } = 25;
-        public double BaseRadius { get; set; } = 12.0;
-        public double RadiusNoiseAmp { get; set; } = 0.1;
-        public int ExtraLoops { get; set; } = 4;
-        public int NoiseOctaves { get; set; } = 2;
-        public double NoiseScale { get; set; } = 1.5;
-        public double Curviness { get; set; } = 0.8;
-        public int CurveSteps { get; set; } = 10;
-        public double JitterAmount { get; set; } = 0.6;
-        public byte InsideBase { get; set; } = 40;
-        public byte InsideRange { get; set; } = 35;
-        public byte OutsideBase { get; set; } = 185;
-        public byte OutsideRange { get; set; } = 45;
-    }
-
-    public static byte[,] GenerateTileGray(Options opt)
-    {
-        int W = opt.Width, H = opt.Height;
-        if (W <= 1 || H <= 1) throw new ArgumentException("Width/Height must be > 1");
-
-        var rng = new Random(opt.Seed);
-
-        // Create a structured grid lattice instead of random Poisson points
-        double jitterAmount = opt.JitterAmount;
-        var nodes = CreateGridLattice(opt.NodeCount, W, H, rng, jitterAmount);
-        if (nodes.Length == 0) throw new InvalidOperationException("No nodes generated; lower NodeCount.");
-
-        var edges = BuildLatticeGraph(nodes, opt.ExtraLoops, W, H);
-
-        var sdf = new float[H, W];
-        for (int y = 0; y < H; y++)
-            for (int x = 0; x < W; x++)
-                sdf[y, x] = 1e9f;
-
-        foreach (var e in edges)
-        {
-            var a = nodes[e.Item1];
-            var b = nodes[e.Item2];
-            
-            // Create curvy path instead of straight line
-            var curvyPath = MakeCurvyPath(a, b, opt.CurveSteps, opt.Curviness, W, H, rng);
-            UnionPolylineSdfTorus(sdf, curvyPath, opt.BaseRadius, opt.RadiusNoiseAmp, W, H, opt.NoiseOctaves, opt.NoiseScale);
-        }
-
-        var img = new byte[H, W];
-        double invBase = 1.0 / Math.Max(1e-6, opt.BaseRadius);
-        for (int y = 0; y < H; y++)
-        {
-            for (int x = 0; x < W; x++)
-            {
-                double d = sdf[y, x];
-                int shade;
-                if (d < 0)
-                {
-                    shade = opt.InsideBase + (int)(opt.InsideRange * (-d * invBase));
-                }
-                else
-                {
-                    shade = opt.OutsideBase + (int)(opt.OutsideRange * Math.Min(d * invBase, 1.0));
-                }
-                if (shade < 0) shade = 0; if (shade > 255) shade = 255;
-                img[y, x] = (byte)shade;
-            }
-        }
-
-        return img;
-    }
-
-    private struct Pt { public double x, y; public Pt(double x, double y) { this.x = x; this.y = y; } }
-
-    private static Pt[] CreateGridLattice(int count, int W, int H, Random rng, double jitterAmount = 0.6)
-    {
-        // Create a loosely structured lattice with organic deformation
-        int gridSize = (int)Math.Ceiling(Math.Sqrt(count));
-        double cellW = (double)W / gridSize;
-        double cellH = (double)H / gridSize;
+        var random = new Random(opt.Seed);
+        var gray = new byte[opt.Width * opt.Height];
         
-        var nodes = new List<Pt>();
-        
-        for (int gy = 0; gy < gridSize; gy++)
+        // Initialize with outside values
+        for (int i = 0; i < gray.Length; i++)
         {
-            for (int gx = 0; gx < gridSize; gx++)
+            gray[i] = (byte)(opt.OutsideBase + random.Next(opt.OutsideRange + 1));
+        }
+
+        // Create lattice grid with jitter
+        var nodes = CreateLatticeGrid(opt, random);
+        
+        // Build lattice graph with smooth connections
+        var edges = BuildLatticeGraph(nodes, opt, random);
+
+        // Render curved tunnels
+        foreach (var (start, end) in edges)
+        {
+            RenderCurvedTunnel(gray, opt, start, end, random);
+        }
+
+        return gray;
+    }
+
+    private List<(double x, double y)> CreateLatticeGrid(Options opt, Random random)
+    {
+        var nodes = new List<(double x, double y)>();
+        var gridSize = (int)Math.Sqrt(opt.NodeCount);
+        
+        for (int row = 0; row < gridSize; row++)
+        {
+            for (int col = 0; col < gridSize; col++)
             {
-                if (nodes.Count >= count) break;
+                // Base grid position
+                double baseX = (col + 0.5) * opt.Width / gridSize;
+                double baseY = (row + 0.5) * opt.Height / gridSize;
                 
-                // Base grid position with offset pattern for more organic feel
-                double offsetX = (gy % 2) * cellW * 0.25; // Offset every other row
-                double baseX = (gx + 0.5) * cellW + offsetX;
-                double baseY = (gy + 0.5) * cellH;
+                // Add organic offset with row staggering
+                double offsetX = row % 2 == 1 ? opt.Width / gridSize * 0.5 : 0;
+                double jitterX = (random.NextDouble() - 0.5) * opt.JitterAmount * opt.Width / gridSize;
+                double jitterY = (random.NextDouble() - 0.5) * opt.JitterAmount * opt.Height / gridSize;
                 
-                // Add organic deformation using multiple noise scales
-                double bigJitterX = (rng.NextDouble() - 0.5) * cellW * jitterAmount;
-                double bigJitterY = (rng.NextDouble() - 0.5) * cellH * jitterAmount;
+                // Apply wave deformation for more organic feel
+                double waveY = Math.Sin(col * 0.8) * opt.Width / gridSize * 0.2;
                 
-                // Add some wave-like deformation across the grid
-                double waveX = Math.Sin(gy * 0.7) * cellW * 0.15;
-                double waveY = Math.Cos(gx * 0.8) * cellH * 0.15;
+                double x = (baseX + offsetX + jitterX) % opt.Width;
+                double y = (baseY + jitterY + waveY) % opt.Height;
                 
-                double x = baseX + bigJitterX + waveX;
-                double y = baseY + bigJitterY + waveY;
+                if (x < 0) x += opt.Width;
+                if (y < 0) y += opt.Height;
                 
-                // Wrap to ensure torus boundary conditions
-                x = ((x % W) + W) % W;
-                y = ((y % H) + H) % H;
-                
-                nodes.Add(new Pt(x, y));
-            }
-            if (nodes.Count >= count) break;
-        }
-        
-        return nodes.Take(count).ToArray();
-    }
-
-    private static (int, int)[] BuildLatticeGraph(Pt[] nodes, int extraLoops, int W, int H)
-    {
-        int N = nodes.Length;
-        if (N == 0) return Array.Empty<(int, int)>();
-        
-        var edges = new List<(int, int)>();
-        int gridSize = (int)Math.Ceiling(Math.Sqrt(N));
-        
-        // Build structured grid connections (lattice pattern)
-        for (int i = 0; i < N; i++)
-        {
-            int gx = i % gridSize;
-            int gy = i / gridSize;
-            
-            // Connect to right neighbor
-            if (gx < gridSize - 1)
-            {
-                int rightIdx = i + 1;
-                if (rightIdx < N) edges.Add((i, rightIdx));
-            }
-            
-            // Connect to bottom neighbor  
-            if (gy < gridSize - 1)
-            {
-                int bottomIdx = i + gridSize;
-                if (bottomIdx < N) edges.Add((i, bottomIdx));
-            }
-            
-            // Torus wrapping connections
-            // Right edge wraps to left
-            if (gx == gridSize - 1)
-            {
-                int wrapRightIdx = gy * gridSize; // leftmost node in same row
-                if (wrapRightIdx < N && wrapRightIdx != i) edges.Add((i, wrapRightIdx));
-            }
-            
-            // Bottom edge wraps to top
-            if (gy == gridSize - 1)
-            {
-                int wrapBottomIdx = gx; // topmost node in same column
-                if (wrapBottomIdx < N && wrapBottomIdx != i) edges.Add((i, wrapBottomIdx));
+                nodes.Add((x, y));
             }
         }
         
-        // Add more organic connections for yarn-like intertwining
-        var connectionCandidates = new List<(int a, int b, double dist)>();
-        
-        for (int i = 0; i < N; i++)
+        return nodes;
+    }
+
+    private List<((double x, double y), (double x, double y))> BuildLatticeGraph(
+        List<(double x, double y)> nodes, Options opt, Random random)
+    {
+        var edges = new List<((double x, double y), (double x, double y))>();
+        var gridSize = (int)Math.Sqrt(opt.NodeCount);
+
+        // Primary lattice connections (grid-based)
+        for (int i = 0; i < nodes.Count; i++)
         {
-            for (int j = i + 1; j < N; j++)
-            {
-                double dist = TorusDistance(nodes[i].x, nodes[i].y, nodes[j].x, nodes[j].y, W, H);
-                if (dist < Math.Min(W, H) * 0.3) // Only consider nearby connections
-                {
-                    connectionCandidates.Add((i, j, dist));
-                }
-            }
-        }
-        
-        // Sort by distance and add shortest connections that create interesting patterns
-        connectionCandidates.Sort((a, b) => a.dist.CompareTo(b.dist));
-        
-        int added = 0;
-        foreach (var candidate in connectionCandidates)
-        {
-            if (added >= extraLoops) break;
+            int row = i / gridSize;
+            int col = i % gridSize;
             
-            // Check if this edge already exists
-            bool exists = false;
-            foreach (var existing in edges)
+            // Right neighbor
+            if (col < gridSize - 1)
             {
-                if ((existing.Item1 == candidate.a && existing.Item2 == candidate.b) ||
-                    (existing.Item1 == candidate.b && existing.Item2 == candidate.a))
-                {
-                    exists = true;
-                    break;
-                }
+                edges.Add((nodes[i], nodes[i + 1]));
+            }
+            else
+            {
+                // Wrap to left edge
+                edges.Add((nodes[i], nodes[row * gridSize]));
             }
             
-            if (!exists)
+            // Down neighbor
+            if (row < gridSize - 1)
             {
-                edges.Add((candidate.a, candidate.b));
-                added++;
+                edges.Add((nodes[i], nodes[i + gridSize]));
             }
-        }
-        
-        return edges.ToArray();
-    }
-
-    private static (double dx, double dy) TorusVector(double ax, double ay, double bx, double by, int W, int H)
-    {
-        double dx = bx - ax; double dy = by - ay;
-        if (dx > W / 2.0) dx -= W; else if (dx < -W / 2.0) dx += W;
-        if (dy > H / 2.0) dy -= H; else if (dy < -H / 2.0) dy += H;
-        return (dx, dy);
-    }
-
-    private static double TorusDistance(double ax, double ay, double bx, double by, int W, int H)
-    {
-        double dx = Math.Abs(ax - bx); if (dx > W / 2.0) dx = W - dx;
-        double dy = Math.Abs(ay - by); if (dy > H / 2.0) dy = H - dy;
-        return Math.Sqrt(dx * dx + dy * dy);
-    }
-
-    private static double Hash22(double x, double y)
-    {
-        const double TWO_PI = Math.PI * 2.0;
-        double n = Math.Sin((x * 127.1 + y * 311.7) * TWO_PI);
-        double f = n - Math.Floor(n);
-        return f;
-    }
-
-    private static double ValueNoisePeriodic(double u, double v, int period)
-    {
-        double x = u * period, y = v * period;
-        int x0 = (int)Math.Floor(x) % period; if (x0 < 0) x0 += period;
-        int y0 = (int)Math.Floor(y) % period; if (y0 < 0) y0 += period;
-        int x1 = (x0 + 1) % period, y1 = (y0 + 1) % period;
-        double fx = x - Math.Floor(x), fy = y - Math.Floor(y);
-        double sx = fx * fx * (3 - 2 * fx);
-        double sy = fy * fy * (3 - 2 * fy);
-        double a = Hash22(x0, y0), b = Hash22(x1, y0), c = Hash22(x0, y1), d = Hash22(x1, y1);
-        double i1 = a + (b - a) * sx;
-        double i2 = c + (d - c) * sx;
-        return (i1 + (i2 - i1) * sy);
-    }
-
-    private static double NoiseToroidal(double u, double v, int octaves = 3, double scale = 1.0)
-    {
-        const int P = 256;
-        double f = 0.0, amp = 0.6, freq = scale;
-        for (int o = 0; o < Math.Max(1, octaves); o++)
-        {
-            double uu = (u * freq) % 1.0; if (uu < 0) uu += 1.0;
-            double vv = (v * freq) % 1.0; if (vv < 0) vv += 1.0;
-            f += amp * ValueNoisePeriodic(uu, vv, P);
-            amp *= 0.5; freq *= 2.0;
-        }
-        return f * 2.0 - 1.0;
-    }
-
-    private static void SegmentSdfMinTorusByVector(float[,] sdf, double ax, double ay, double dvx, double dvy,
-                                                   double baseR, double amp, int W, int H, int noiseOctaves, double noiseScale)
-    {
-        int HH = sdf.GetLength(0), WW = sdf.GetLength(1);
-        double ABx = dvx, ABy = dvy;
-        double AB2 = ABx * ABx + ABy * ABy + 1e-12;
-
-        // Calculate bounding box to limit pixel checking
-        double minX = Math.Min(ax, ax + ABx) - baseR * (1.0 + amp);
-        double maxX = Math.Max(ax, ax + ABx) + baseR * (1.0 + amp);
-        double minY = Math.Min(ay, ay + ABy) - baseR * (1.0 + amp);
-        double maxY = Math.Max(ay, ay + ABy) + baseR * (1.0 + amp);
-
-        int startX = Math.Max(0, (int)Math.Floor(minX));
-        int endX = Math.Min(WW - 1, (int)Math.Ceiling(maxX));
-        int startY = Math.Max(0, (int)Math.Floor(minY));
-        int endY = Math.Min(HH - 1, (int)Math.Ceiling(maxY));
-
-        // Only process single copy first, add torus wrapping only if needed
-        for (int y = startY; y <= endY; y++)
-        {
-            for (int x = startX; x <= endX; x++)
+            else
             {
-                double APx = x - ax;
-                double APy = y - ay;
-                double t = (APx * ABx + APy * ABy) / AB2;
-                if (t < 0) t = 0; else if (t > 1) t = 1;
-                double Cx = ax + ABx * t;
-                double Cy = ay + ABy * t;
-                double dx = x - Cx; double dy = y - Cy;
-                double dist = Math.Sqrt(dx * dx + dy * dy);
-                
-                // Simplified noise calculation 
-                double u = (Cx / W) % 1.0; if (u < 0) u += 1.0;
-                double v = (Cy / H) % 1.0; if (v < 0) v += 1.0;
-                double r = baseR * (1.0 + amp * NoiseToroidal(u, v, noiseOctaves, noiseScale));
-                float val = (float)(dist - r);
-                if (val < sdf[y, x]) sdf[y, x] = val;
+                // Wrap to top edge
+                edges.Add((nodes[i], nodes[col]));
             }
         }
 
-        // Handle torus wrapping only for segments near edges
-        if (minX < baseR || maxX > W - baseR || minY < baseR || maxY > H - baseR)
+        // Add extra random connections for organic variation
+        for (int i = 0; i < opt.ExtraLoops; i++)
         {
-            for (int oy = -H; oy <= H; oy += H)
-            {
-                for (int ox = -W; ox <= W; ox += W)
-                {
-                    if (ox == 0 && oy == 0) continue; // Already processed above
-                    
-                    double startX_wrap = ax + ox, startY_wrap = ay + oy;
-                    for (int y = 0; y < HH; y++)
-                    {
-                        for (int x = 0; x < WW; x++)
-                        {
-                            double APx = x - startX_wrap;
-                            double APy = y - startY_wrap;
-                            double t = (APx * ABx + APy * ABy) / AB2;
-                            if (t < 0) t = 0; else if (t > 1) t = 1;
-                            double Cx = startX_wrap + ABx * t;
-                            double Cy = startY_wrap + ABy * t;
-                            double dx = x - Cx; double dy = y - Cy;
-                            double dist = Math.Sqrt(dx * dx + dy * dy);
-                            
-                            if (dist < baseR * 2) // Early exit for distant pixels
-                            {
-                                double u = Mod(Cx, W) / W;
-                                double v = Mod(Cy, H) / H;
-                                double r = baseR * (1.0 + amp * NoiseToroidal(u, v, noiseOctaves, noiseScale));
-                                float val = (float)(dist - r);
-                                if (val < sdf[y, x]) sdf[y, x] = val;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private static double Mod(double a, int m)
-    {
-        double r = a % m; if (r < 0) r += m; return r;
-    }
-
-    // Phase 2: Curvy polylines implementation
-    private static (double x, double y) CurlField(double u, double v)
-    {
-        // Simple curl noise - derivative of potential field
-        double scale = 4.0;
-        double dx = ValueNoisePeriodic(u, v + 0.01, 256) - ValueNoisePeriodic(u, v - 0.01, 256);
-        double dy = ValueNoisePeriodic(u + 0.01, v, 256) - ValueNoisePeriodic(u - 0.01, v, 256);
-        return (dy * scale, -dx * scale); // Perpendicular for curl
-    }
-
-    private static System.Collections.Generic.List<(double x, double y)> MakeCurvyPath(
-        Pt a, Pt b, int steps, double curviness, int W, int H, Random rng)
-    {
-        var path = new System.Collections.Generic.List<(double x, double y)>();
-        path.Add((a.x, a.y));
-
-        if (steps <= 1)
-        {
-            path.Add((b.x, b.y));
-            return path;
-        }
-
-        // Get the direct vector from a to b accounting for torus wrapping
-        var directVec = TorusVector(a.x, a.y, b.x, b.y, W, H);
-        double totalDist = Math.Sqrt(directVec.dx * directVec.dx + directVec.dy * directVec.dy);
-        double stepLen = totalDist / steps;
-
-        double currentX = a.x, currentY = a.y;
-        
-        for (int i = 1; i < steps; i++)
-        {
-            // Progress toward target
-            double t = (double)i / steps;
-            double targetX = a.x + directVec.dx * t;
-            double targetY = a.y + directVec.dy * t;
+            var node1 = nodes[random.Next(nodes.Count)];
             
-            // Add curl noise deviation
-            double u = Mod(currentX, W) / W;
-            double v = Mod(currentY, H) / H;
-            var curl = CurlField(u, v);
+            // Find nearby nodes for more natural connections
+            var nearbyNodes = nodes.Where(n => 
+                Distance(node1, n) < opt.Width / gridSize * 2.5 && 
+                !nodes.Where(existing => existing == n).Any()
+            ).ToList();
             
-            // Blend toward target with curl deviation
-            double deviation = curviness * stepLen * 0.5;
-            currentX = targetX + curl.x * deviation;
-            currentY = targetY + curl.y * deviation;
+            if (nearbyNodes.Count > 0)
+            {
+                var node2 = nearbyNodes[random.Next(nearbyNodes.Count)];
+                edges.Add((node1, node2));
+            }
+        }
+
+        return edges;
+    }
+
+    private void RenderCurvedTunnel(byte[] gray, Options opt, 
+        (double x, double y) start, (double x, double y) end, Random random)
+    {
+        var path = CreateCurvedPath(start, end, opt, random);
+        
+        foreach (var (x, y) in path)
+        {
+            // Render tunnel with noise-based width variation
+            double noiseValue = NoiseToroidal(x / opt.Width, y / opt.Height, opt.NoiseOctaves, opt.NoiseScale);
+            double radiusMultiplier = 1.0 + opt.RadiusNoiseAmp * noiseValue;
+            double radius = opt.BaseRadius * radiusMultiplier;
+            
+            RenderTunnelSegment(gray, opt, x, y, radius, random);
+        }
+    }
+
+    private List<(double x, double y)> CreateCurvedPath(
+        (double x, double y) start, (double x, double y) end, Options opt, Random random)
+    {
+        var path = new List<(double x, double y)>();
+        
+        // Calculate path with torus wrapping
+        var (dx, dy) = GetTorusVector(start, end, opt.Width, opt.Height);
+        var distance = Math.Sqrt(dx * dx + dy * dy);
+        
+        if (distance < 1.0) return path;
+        
+        // Generate control points for smooth curve
+        double midX = start.x + dx * 0.5;
+        double midY = start.y + dy * 0.5;
+        
+        // Add curvature perpendicular to the main direction
+        double perpX = -dy / distance;
+        double perpY = dx / distance;
+        double curveOffset = opt.Curviness * distance * 0.3 * (random.NextDouble() - 0.5);
+        
+        midX += perpX * curveOffset;
+        midY += perpY * curveOffset;
+        
+        // Ensure midpoint wraps correctly on torus
+        midX = ((midX % opt.Width) + opt.Width) % opt.Width;
+        midY = ((midY % opt.Height) + opt.Height) % opt.Height;
+        
+        // Generate smooth curve
+        for (int i = 0; i <= opt.CurveSteps; i++)
+        {
+            double t = (double)i / opt.CurveSteps;
+            
+            // Quadratic Bezier interpolation
+            double x = (1-t)*(1-t)*start.x + 2*(1-t)*t*midX + t*t*end.x;
+            double y = (1-t)*(1-t)*start.y + 2*(1-t)*t*midY + t*t*end.y;
             
             // Wrap coordinates
-            currentX = Mod(currentX, W);
-            currentY = Mod(currentY, H);
+            x = ((x % opt.Width) + opt.Width) % opt.Width;
+            y = ((y % opt.Height) + opt.Height) % opt.Height;
             
-            path.Add((currentX, currentY));
+            path.Add((x, y));
         }
-
-        path.Add((b.x, b.y));
+        
         return path;
     }
 
-    private static void UnionPolylineSdfTorus(float[,] sdf, System.Collections.Generic.List<(double x, double y)> path,
-        double baseR, double amp, int W, int H, int noiseOctaves, double noiseScale)
+    private void RenderTunnelSegment(byte[] gray, Options opt, double centerX, double centerY, 
+        double radius, Random random)
     {
-        if (path.Count < 2) return;
+        int minX = (int)Math.Max(0, centerX - radius - 2);
+        int maxX = (int)Math.Min(opt.Width - 1, centerX + radius + 2);
+        int minY = (int)Math.Max(0, centerY - radius - 2);
+        int maxY = (int)Math.Min(opt.Height - 1, centerY + radius + 2);
 
-        // Draw capsules between consecutive points
-        for (int i = 0; i < path.Count - 1; i++)
+        for (int py = minY; py <= maxY; py++)
         {
-            var a = path[i];
-            var b = path[i + 1];
-            var dv = TorusVector(a.x, a.y, b.x, b.y, W, H);
-            SegmentSdfMinTorusByVector(sdf, a.x, a.y, dv.dx, dv.dy, baseR, amp, W, H, noiseOctaves, noiseScale);
+            for (int px = minX; px <= maxX; px++)
+            {
+                double dist = Distance((px, py), (centerX, centerY));
+                
+                if (dist <= radius)
+                {
+                    int idx = py * opt.Width + px;
+                    gray[idx] = (byte)(opt.InsideBase + random.Next(opt.InsideRange + 1));
+                }
+            }
         }
+    }
+
+    private (double dx, double dy) GetTorusVector((double x, double y) from, (double x, double y) to, 
+        int width, int height)
+    {
+        double dx = to.x - from.x;
+        double dy = to.y - from.y;
+        
+        // Handle torus wrapping
+        if (Math.Abs(dx) > width * 0.5)
+        {
+            dx = dx > 0 ? dx - width : dx + width;
+        }
+        if (Math.Abs(dy) > height * 0.5)
+        {
+            dy = dy > 0 ? dy - height : dy + height;
+        }
+        
+        return (dx, dy);
+    }
+
+    private double Distance((double x, double y) a, (double x, double y) b)
+    {
+        double dx = a.x - b.x;
+        double dy = a.y - b.y;
+        return Math.Sqrt(dx * dx + dy * dy);
+    }
+
+    private double NoiseToroidal(double x, double y, int octaves, double scale)
+    {
+        double total = 0.0;
+        double frequency = scale;
+        double amplitude = 1.0;
+        double maxValue = 0.0;
+
+        for (int i = 0; i < octaves; i++)
+        {
+            total += ValueNoisePeriodic(x * frequency, y * frequency) * amplitude;
+            maxValue += amplitude;
+            amplitude *= 0.5;
+            frequency *= 2.0;
+        }
+
+        return total / maxValue;
+    }
+
+    private double ValueNoisePeriodic(double x, double y)
+    {
+        // Convert to unit torus coordinates
+        double fx = x - Math.Floor(x);
+        double fy = y - Math.Floor(y);
+        
+        // Get integer coordinates
+        int ix = (int)Math.Floor(x) & 255;
+        int iy = (int)Math.Floor(y) & 255;
+        
+        // Sample noise at corners
+        double a = Hash22(ix, iy);
+        double b = Hash22(ix + 1, iy);
+        double c = Hash22(ix, iy + 1);
+        double d = Hash22(ix + 1, iy + 1);
+        
+        // Smooth interpolation
+        double u = Fade(fx);
+        double v = Fade(fy);
+        
+        return Lerp(Lerp(a, b, u), Lerp(c, d, u), v);
+    }
+
+    private double Hash22(int x, int y)
+    {
+        int n = x * 374761393 + y * 668265263;
+        n = (n << 13) ^ n;
+        return ((n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff) / (double)0x7fffffff;
+    }
+
+    private double Fade(double t)
+    {
+        return t * t * t * (t * (t * 6 - 15) + 10);
+    }
+
+    private double Lerp(double a, double b, double t)
+    {
+        return a + t * (b - a);
+    }
+
+    private byte[] ConvertGrayToRgba(byte[] grayMap)
+    {
+        var rgba = new byte[grayMap.Length * 4];
+        for (int i = 0; i < grayMap.Length; i++)
+        {
+            rgba[i * 4] = grayMap[i];     // R
+            rgba[i * 4 + 1] = grayMap[i]; // G
+            rgba[i * 4 + 2] = grayMap[i]; // B
+            rgba[i * 4 + 3] = 255;        // A
+        }
+        return rgba;
     }
 } 
